@@ -1,6 +1,6 @@
 import db from "../db/index.js";
 
-async function validateSession(req, res, next) {
+async function authenticateSession(req, res, next) {
   const sessionId = req.cookies.session_id;
   if (!sessionId) return res.sendStatus(401);
 
@@ -24,4 +24,4 @@ async function validateSession(req, res, next) {
   next();
 }
 
-export default validateSession;
+export default authenticateSession;
