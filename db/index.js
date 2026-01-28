@@ -20,6 +20,7 @@ const dbConfig = {
   database: process.env.DB_NAME,
   user: process.env.DB_USERNAME,
   password: process.env.DB_PASSWORD,
+  options: "-c search_path=public",
 };
 
 const db = pgp(dbConfig);
