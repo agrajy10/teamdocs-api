@@ -2,10 +2,10 @@
   "name": "stateful-auth-project",
   "version": "1.0.0",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "start": "node --watch ./app.js",
-    "test": "cross-env NODE_ENV=TEST jest --runInBand",
-    "test:watch": "npm test -- --watch"
+    "test": "cross-env NODE_ENV=test node --experimental-vm-modules node_modules/jest/bin/jest.js"
   },
   "keywords": [],
   "author": "",
