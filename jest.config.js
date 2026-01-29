@@ -5,6 +5,7 @@ const config = {
   collectCoverage: true,
   coverageDirectory: "coverage",
   testMatch: ["**/tests/**/*.test.js"],
+  setupFiles: ["dotenv/config"],
 };
 
 export default config;
