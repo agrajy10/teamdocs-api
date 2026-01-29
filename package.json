@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "node --watch ./app.js",
-    "test": "cross-env NODE_ENV=test node --experimental-vm-modules node_modules/jest/bin/jest.js"
+    "test": "cross-env NODE_ENV=TEST node --experimental-vm-modules node_modules/jest/bin/jest.js"
   },
   "keywords": [],
   "author": "",
