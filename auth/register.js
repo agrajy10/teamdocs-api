@@ -21,7 +21,7 @@ async function register(req, res) {
   if (!role_id) {
     return res.status(400).json({ error: "Invalid user role" });
   }
-  const [user] = await db.query(
+  await db.query(
     "INSERT INTO users(email, password_hash, is_active, created_at, updated_at, role_id) VALUES($1, $2, $3, NOW(), NOW(), $4) RETURNING *",
     [email, hashedPassword, true, role_id],
   );
