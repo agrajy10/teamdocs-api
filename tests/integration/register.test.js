@@ -8,7 +8,6 @@ beforeEach(async () => {
 
 describe("POST /auth/register", () => {
   it("creates a user with member role", async () => {
-    console.log("proccss", process.env.DB_PASSWORD);
     const res = await request(app).post("/auth/register").send({
       email: "test@example.com",
       password: "StrongPass1!",
