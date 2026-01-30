@@ -1,0 +1,25 @@
+import db from "../../db/index.js";
+import hashPassword from "../../utils/hashPassword.js";
+
+async function seedUser() {
+  const email = "test@example.com";
+  const password = "StrongPass1!";
+  const role = "member";
+  const passwordHash = await hashPassword(password);
+
+  const { role_id } = await db.oneOrNone(
+    "SELECT id as role_id FROM roles WHERE name = $1",
+    [role],
+  );
+
+  return db.query(
+    `
+    INSERT INTO users (email, password_hash, is_active, created_at, updated_at, role_id)
+    VALUES ($1, $2, $3, NOW(), NOW(), $4)
+    RETURNING *
+    `,
+    [email, passwordHash, true, role_id],
+  );
+}
+
+export default seedUser;
