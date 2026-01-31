@@ -24,3 +24,25 @@ export async function createDocument(req, res) {
     });
   }
 }
+
+export async function getDocuments(req, res) {
+  const userId = req.userId;
+
+  try {
+    const documents = await db.manyOrNone(
+      `
+        SELECT id, title, content, owner_id, created_at, updated_at
+        FROM documents
+        WHERE owner_id = $1
+        `,
+      [userId],
+    );
+
+    return res.status(200).json({ success: true, documents });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "An error occurred. Please try again.",
+    });
+  }
+}
