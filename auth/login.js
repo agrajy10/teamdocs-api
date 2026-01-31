@@ -37,6 +37,12 @@ async function login(req, res) {
       sameSite: "strict",
     });
 
+    res.cookie("csrf_token", crypto.randomBytes(32).toString("hex"), {
+      httpOnly: false,
+      sameSite: "strict",
+      secure: true,
+    });
+
     return res.status(200).json({ success: true });
   }
 
