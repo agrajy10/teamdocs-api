@@ -2,7 +2,10 @@ import db from "../db/index.js";
 
 async function authenticateSession(req, res, next) {
   const sessionId = req.cookies.session_id;
-  if (!sessionId) return res.sendStatus(401);
+  if (!sessionId)
+    return res.status(401).json({
+      message: "Invalid session token",
+    });
 
   const session = await db.oneOrNone(
     `
