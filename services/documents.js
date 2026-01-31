@@ -46,3 +46,25 @@ export async function getDocuments(req, res) {
     });
   }
 }
+
+export async function deleteDocument(req, res) {
+  const documentId = req.params.id;
+  const userId = req.userId;
+
+  try {
+    await db.query(
+      `
+        DELETE FROM documents
+        WHERE id = $1 
+        `,
+      [documentId],
+    );
+
+    return res.status(200).json({ success: true, message: "Document deleted" });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "An error occurred. Please try again.",
+    });
+  }
+}
