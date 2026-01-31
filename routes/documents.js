@@ -7,9 +7,11 @@ import {
   createDocument,
   deleteDocument,
   getDocuments,
+  viewDocument,
 } from "../services/documents.js";
 import csrfValidation from "../middleware/csrf.middleware.js";
 import canDeleteDocument from "../middleware/canDeleteDocument.js";
+import canViewDocument from "../middleware/canViewDocument.js";
 
 const router = Router();
 
@@ -24,6 +26,8 @@ router.post(
 );
 
 router.get("/", authenticateSession, getDocuments);
+
+router.get("/:id", authenticateSession, canViewDocument, viewDocument);
 
 router.delete("/:id", authenticateSession, canDeleteDocument, deleteDocument);
 

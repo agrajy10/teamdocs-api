@@ -68,3 +68,30 @@ export async function deleteDocument(req, res) {
     });
   }
 }
+
+export async function viewDocument(req, res) {
+  const documentId = req.params.id;
+  try {
+    const document = await db.oneOrNone(
+      `
+        SELECT id, title, content, owner_id, created_at, updated_at
+        FROM documents
+        WHERE id = $1
+        `,
+      [documentId],
+    );
+
+    if (!document) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Document not found" });
+    }
+
+    return res.status(200).json({ success: true, document });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "An error occurred. Please try again.",
+    });
+  }
+}
