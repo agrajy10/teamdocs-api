@@ -14,7 +14,7 @@ async function hasPermission(userId, permission) {
     [userId, permission],
   );
 
-  return result.rowCount > 0;
+  return result.length > 0;
 }
 
 export default hasPermission;
