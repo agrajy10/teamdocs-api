@@ -6,3 +6,15 @@ export async function getAllUsers(_, res) {
   );
   res.status(200).json({ users });
 }
+
+export async function deleteUser(req, res) {
+  try {
+    const userId = req.params.id;
+    await db.query("DELETE FROM users WHERE id = $1", [userId]);
+    res
+      .status(200)
+      .json({ success: true, message: "User deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ error: "Internal server error" });
+  }
+}
