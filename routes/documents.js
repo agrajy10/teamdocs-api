@@ -4,6 +4,7 @@ import { body } from "express-validator";
 import authenticateSession from "../middleware/authenticateSession.js";
 import authorize from "../middleware/authorize.js";
 import { createDocument } from "../services/documents.js";
+import csrfValidation from "../middleware/csrf.middleware.js";
 
 const router = Router();
 
@@ -13,6 +14,7 @@ router.post(
   authenticateSession,
   authorize("docs:write"),
   handleValidationError,
+  csrfValidation,
   createDocument,
 );
 
