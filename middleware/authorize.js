@@ -1,4 +1,4 @@
-import { hasPermission } from "../services/hasPermission.js";
+import hasPermission from "../services/hasPermission.js";
 
 function authorize(permission) {
   return async (req, res, next) => {
@@ -8,7 +8,7 @@ function authorize(permission) {
       return res.status(403).json({ error: "Authentication required" });
     }
 
-    const allowed = await hasPermission(req.db, userId, permission);
+    const allowed = await hasPermission(userId, permission);
 
     if (!allowed) {
       return res.status(403).json({ error: "Access denied" });
