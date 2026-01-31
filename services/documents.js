@@ -49,7 +49,6 @@ export async function getDocuments(req, res) {
 
 export async function deleteDocument(req, res) {
   const documentId = req.params.id;
-  const userId = req.userId;
 
   try {
     await db.query(
