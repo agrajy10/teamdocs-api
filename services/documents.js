@@ -94,3 +94,34 @@ export async function viewDocument(req, res) {
     });
   }
 }
+
+export async function updateDocument(req, res) {
+  const documentId = req.params.id;
+  const title = sanitize(req.body.title);
+  const content = sanitize(req.body.content);
+
+  try {
+    const document = await db.oneOrNone(
+      `
+        UPDATE documents
+        SET title = $1, content = $2, updated_at = NOW()
+        WHERE id = $3
+        RETURNING id, title, content, owner_id, created_at, updated_at
+        `,
+      [title, content, documentId],
+    );
+
+    if (!document) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Document not found" });
+    }
+
+    return res.status(200).json({ success: true, document });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "An error occurred. Please try again.",
+    });
+  }
+}
