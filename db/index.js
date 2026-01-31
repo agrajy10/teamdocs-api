@@ -1,7 +1,7 @@
 import env from "../constants/env.js";
 import pgPromise from "pg-promise";
 
-const isDev = env.NODE_ENV === "DEV";
+const isDev = env.ENV === "DEV";
 const initOptions = {
   query(e) {
     if (isDev) {
