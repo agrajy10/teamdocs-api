@@ -6,7 +6,7 @@ import authorize from "../middleware/authorize.js";
 import {
   createDocument,
   deleteDocument,
-  getDocuments,
+  getMyDocuments,
   updateDocument,
   viewDocument,
 } from "../services/documents.js";
@@ -27,7 +27,7 @@ router.post(
   createDocument,
 );
 
-router.get("/", authenticateSession, getDocuments);
+router.get("/my-documents", authenticateSession, getMyDocuments);
 
 router.get("/:id", authenticateSession, canViewDocument, viewDocument);
 

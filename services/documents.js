@@ -25,7 +25,7 @@ export async function createDocument(req, res) {
   }
 }
 
-export async function getDocuments(req, res) {
+export async function getMyDocuments(req, res) {
   const userId = req.userId;
 
   try {
