@@ -25,6 +25,24 @@ export async function createDocument(req, res) {
   }
 }
 
+export async function getAllDocuments(req, res) {
+  try {
+    const documents = await db.manyOrNone(
+      `
+        SELECT id, title, content, created_at, updated_at
+        FROM documents
+        `,
+    );
+
+    return res.status(200).json({ success: true, documents });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "An error occurred. Please try again.",
+    });
+  }
+}
+
 export async function getMyDocuments(req, res) {
   const userId = req.userId;
 
