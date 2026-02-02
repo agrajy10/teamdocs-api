@@ -13,10 +13,6 @@ afterEach(async () => {
   await rollback();
 });
 
-afterAll(async () => {
-  await db.$pool.end();
-});
-
 describe("POST /documents", () => {
   it.each(["admin", "manager", "member"])(
     "allows %s to create a document",
@@ -322,5 +318,90 @@ describe("DELETE /documents/:id", () => {
       doc.id,
     ]);
     expect(found).toBeNull();
+  });
+});
+
+describe("GET /documents", () => {
+  it("allows admin to view all documents", async () => {
+    const [admin] = await seedUser({
+      role: "admin",
+      email: "admin_list@example.com",
+    });
+    const { sessionId, csrfToken } = await setupAuth(admin);
+
+    await db.none(
+      "INSERT INTO documents (title, content, owner_id) VALUES ($1, $2, $3)",
+      ["Doc 1", "Content", admin.id],
+    );
+
+    const res = await request(app)
+      .get("/documents")
+      .set("Cookie", [`session_id=${sessionId}`, `csrf_token=${csrfToken}`]);
+
+    expect(res.status).toBe(200);
+    expect(res.body.documents.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("allows manager to view all documents", async () => {
+    const [manager] = await seedUser({
+      role: "manager",
+      email: "manager_list@example.com",
+    });
+    const { sessionId, csrfToken } = await setupAuth(manager);
+
+    await db.none(
+      "INSERT INTO documents (title, content, owner_id) VALUES ($1, $2, $3)",
+      ["Doc 1", "Content", manager.id],
+    );
+
+    const res = await request(app)
+      .get("/documents")
+      .set("Cookie", [`session_id=${sessionId}`, `csrf_token=${csrfToken}`]);
+
+    expect(res.status).toBe(200);
+    expect(res.body.documents.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("prevents member from viewing all documents", async () => {
+    const [member] = await seedUser({
+      role: "member",
+      email: "member_list@example.com",
+    });
+    const { sessionId, csrfToken } = await setupAuth(member);
+
+    const res = await request(app)
+      .get("/documents")
+      .set("Cookie", [`session_id=${sessionId}`, `csrf_token=${csrfToken}`]);
+
+    expect(res.status).toBe(403);
+    expect(res.body.error).toBe("Access denied");
+  });
+});
+
+describe("GET /documents/my-documents", () => {
+  it("returns only user's documents", async () => {
+    const [user] = await seedUser({
+      role: "member",
+      email: "my_docs@example.com",
+    });
+    const [other] = await seedUser({ email: "other_docs@example.com" });
+    const { sessionId, csrfToken } = await setupAuth(user);
+
+    await db.none(
+      "INSERT INTO documents (title, content, owner_id) VALUES ($1, $2, $3)",
+      ["My Doc", "Content", user.id],
+    );
+    await db.none(
+      "INSERT INTO documents (title, content, owner_id) VALUES ($1, $2, $3)",
+      ["Other Doc", "Content", other.id],
+    );
+
+    const res = await request(app)
+      .get("/documents/my-documents")
+      .set("Cookie", [`session_id=${sessionId}`, `csrf_token=${csrfToken}`]);
+
+    expect(res.status).toBe(200);
+    expect(res.body.documents).toHaveLength(1);
+    expect(res.body.documents[0].title).toBe("My Doc");
   });
 });

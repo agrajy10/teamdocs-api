@@ -14,8 +14,10 @@ app.use("/auth", authRoutes);
 app.use("/users", userRoutes);
 app.use("/documents", documentRoutes);
 
-app.listen(port, () => {
-  console.log(`App is running on port : ${port}`);
-});
+if (process.env.NODE_ENV !== "TEST") {
+  app.listen(port, () => {
+    console.log(`App is running on port : ${port}`);
+  });
+}
 
 export default app;

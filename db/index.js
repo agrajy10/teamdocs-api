@@ -21,6 +21,7 @@ const dbConfig = {
   database: env.DB_NAME,
   user: env.DB_USERNAME,
   password: env.DB_PASSWORD,
+  allowExitOnIdle: true,
   options: "-c search_path=public",
 };
 
