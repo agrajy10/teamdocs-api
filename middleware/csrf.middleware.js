@@ -7,7 +7,7 @@ function csrfValidation(req, res, next) {
   }
 
   if (csrfCookie !== csrfHeader) {
-    return res.status(401).json({ error: "Invalid token missing" });
+    return res.status(401).json({ error: "Invalid CSRF token" });
   }
 
   next();
