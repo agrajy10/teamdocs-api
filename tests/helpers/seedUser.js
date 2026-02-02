@@ -1,10 +1,10 @@
 import db from "../../db/index.js";
 import hashPassword from "../../utils/hashPassword.js";
 
-async function seedUser() {
-  const email = "test@example.com";
-  const password = "StrongPass1!";
-  const role = "member";
+async function seedUser(overrides = {}) {
+  const email = overrides.email || "test@example.com";
+  const password = overrides.password || "StrongPass1!";
+  const role = overrides.role || "member";
   const passwordHash = await hashPassword(password);
 
   const { role_id } = await db.oneOrNone(
