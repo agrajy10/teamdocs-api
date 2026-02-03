@@ -16,11 +16,13 @@ import canDeleteDocument from "../middleware/canDeleteDocument.js";
 import canViewDocument from "../middleware/canViewDocument.js";
 import canUpdateDocument from "../middleware/canUpdateDocument.js";
 import checkDocumentExists from "../middleware/checkDocumentExists.js";
+import limiter from "../middleware/rateLimiter.js";
 
 const router = Router();
 
 router.post(
   "/",
+  limiter,
   [body("title").notEmpty(), body("content").notEmpty().bail().isString()],
   authenticateSession,
   authorize("docs:create"),
@@ -48,6 +50,7 @@ router.get(
 
 router.put(
   "/:id",
+  limiter,
   [body("title").notEmpty(), body("content").notEmpty().bail().isString()],
   authenticateSession,
   checkDocumentExists,

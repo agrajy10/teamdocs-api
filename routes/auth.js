@@ -4,11 +4,13 @@ import handleValidationError from "../middleware/validation.middleware.js";
 import register from "../auth/register.js";
 import login from "../auth/login.js";
 import logout from "../auth/logout.js";
+import limiter from "../middleware/rateLimiter.js";
 
 const router = Router();
 
 router.post(
   "/register",
+  limiter,
   [
     body("role")
       .notEmpty()
@@ -29,6 +31,7 @@ router.post(
 
 router.post(
   "/login",
+  limiter,
   [body("email").isEmail(), body("password").notEmpty()],
   handleValidationError,
   login,
