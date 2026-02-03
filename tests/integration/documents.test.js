@@ -219,6 +219,128 @@ describe("GET /documents/:id", () => {
   });
 });
 
+describe("PUT /documents/:id", () => {
+  it("allows owner to update their own document", async () => {
+    const [user] = await seedUser({ email: "owner_update@example.com" });
+    const { sessionId, csrfToken } = await setupAuth(user);
+
+    const doc = await db.one(
+      "INSERT INTO documents (title, content, owner_id) VALUES ($1, $2, $3) RETURNING id",
+      ["Original Title", "Original Content", user.id],
+    );
+
+    const res = await request(app)
+      .put(`/documents/${doc.id}`)
+      .set("Cookie", [`session_id=${sessionId}`, `csrf_token=${csrfToken}`])
+      .set("X-CSRF-Token", csrfToken)
+      .send({
+        title: "Updated Title",
+        content: "Updated Content",
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.document.title).toBe("Updated Title");
+    expect(res.body.document.content).toBe("Updated Content");
+
+    const updatedDoc = await db.one("SELECT * FROM documents WHERE id = $1", [
+      doc.id,
+    ]);
+    expect(updatedDoc.title).toBe("Updated Title");
+  });
+
+  it.each(["admin", "manager"])(
+    "allows %s to update other user's document",
+    async (role) => {
+      const [actor] = await seedUser({
+        role,
+        email: `${role}_update@example.com`,
+      });
+      const [other] = await seedUser({
+        email: `other_${role}_target@example.com`,
+      });
+      const { sessionId, csrfToken } = await setupAuth(actor);
+
+      const doc = await db.one(
+        "INSERT INTO documents (title, content, owner_id) VALUES ($1, $2, $3) RETURNING id",
+        ["Original Title", "Original Content", other.id],
+      );
+
+      const res = await request(app)
+        .put(`/documents/${doc.id}`)
+        .set("Cookie", [`session_id=${sessionId}`, `csrf_token=${csrfToken}`])
+        .set("X-CSRF-Token", csrfToken)
+        .send({
+          title: "Force Updated",
+          content: "Content",
+        });
+
+      expect(res.status).toBe(200);
+      expect(res.body.document.title).toBe("Force Updated");
+    },
+  );
+
+  it("prevents member from updating other user's document", async () => {
+    const [member] = await seedUser({ email: "member_update@example.com" });
+    const [other] = await seedUser({
+      email: "other_update_target@example.com",
+    });
+    const { sessionId, csrfToken } = await setupAuth(member);
+
+    const doc = await db.one(
+      "INSERT INTO documents (title, content, owner_id) VALUES ($1, $2, $3) RETURNING id",
+      ["Original Title", "Content", other.id],
+    );
+
+    const res = await request(app)
+      .put(`/documents/${doc.id}`)
+      .set("Cookie", [`session_id=${sessionId}`, `csrf_token=${csrfToken}`])
+      .set("X-CSRF-Token", csrfToken)
+      .send({
+        title: "Hacked Title",
+        content: "Content",
+      });
+
+    expect(res.status).toBe(403);
+    expect(res.body.error).toBe("Permission denied");
+  });
+
+  it("returns 400 if title is missing", async () => {
+    const [user] = await seedUser();
+    const { sessionId, csrfToken } = await setupAuth(user);
+    const doc = await db.one(
+      "INSERT INTO documents (title, content, owner_id) VALUES ($1, $2, $3) RETURNING id",
+      ["Title", "Content", user.id],
+    );
+
+    const res = await request(app)
+      .put(`/documents/${doc.id}`)
+      .set("Cookie", [`session_id=${sessionId}`, `csrf_token=${csrfToken}`])
+      .set("X-CSRF-Token", csrfToken)
+      .send({
+        content: "Updated Content",
+      });
+
+    expect(res.status).toBe(400);
+  });
+
+  it("returns 404 if document does not exist", async () => {
+    const [user] = await seedUser();
+    const { sessionId, csrfToken } = await setupAuth(user);
+
+    const res = await request(app)
+      .put("/documents/550e8400-e29b-41d4-a716-446655440000") // Assuming this ID doesn't exist
+      .set("Cookie", [`session_id=${sessionId}`, `csrf_token=${csrfToken}`])
+      .set("X-CSRF-Token", csrfToken)
+      .send({
+        title: "Title",
+        content: "Content",
+      });
+
+    expect(res.status).toBe(404);
+    expect(res.body.error).toBe("Document not found");
+  });
+});
+
 describe("DELETE /documents/:id", () => {
   it("allows member to delete their own document", async () => {
     const [user] = await seedUser({ email: "member1@example.com" });
