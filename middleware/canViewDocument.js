@@ -3,9 +3,9 @@ import isDocumentOwner from "../services/isDocumentOwner.js";
 
 async function canViewDocument(req, res, next) {
   const userId = req.userId;
-  const documentId = req.params.id;
+  const document = req.document;
 
-  if (await isDocumentOwner(documentId, userId)) {
+  if (await isDocumentOwner(document.owner_id, userId)) {
     return next();
   }
 

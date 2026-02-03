@@ -15,6 +15,7 @@ import csrfValidation from "../middleware/csrf.middleware.js";
 import canDeleteDocument from "../middleware/canDeleteDocument.js";
 import canViewDocument from "../middleware/canViewDocument.js";
 import canUpdateDocument from "../middleware/canUpdateDocument.js";
+import checkDocumentExists from "../middleware/checkDocumentExists.js";
 
 const router = Router();
 
@@ -37,18 +38,31 @@ router.get(
   getAllDocuments,
 );
 
-router.get("/:id", authenticateSession, canViewDocument, viewDocument);
+router.get(
+  "/:id",
+  authenticateSession,
+  checkDocumentExists,
+  canViewDocument,
+  viewDocument,
+);
 
 router.put(
   "/:id",
   [body("title").notEmpty(), body("content").notEmpty().bail().isString()],
   authenticateSession,
+  checkDocumentExists,
   canUpdateDocument,
   handleValidationError,
   csrfValidation,
   updateDocument,
 );
 
-router.delete("/:id", authenticateSession, canDeleteDocument, deleteDocument);
+router.delete(
+  "/:id",
+  authenticateSession,
+  checkDocumentExists,
+  canDeleteDocument,
+  deleteDocument,
+);
 
 export default router;

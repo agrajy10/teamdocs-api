@@ -66,7 +66,7 @@ export async function getMyDocuments(req, res) {
 }
 
 export async function deleteDocument(req, res) {
-  const documentId = req.params.id;
+  const document = req.document;
 
   try {
     await db.query(
@@ -74,7 +74,7 @@ export async function deleteDocument(req, res) {
         DELETE FROM documents
         WHERE id = $1 
         `,
-      [documentId],
+      [document.id],
     );
 
     return res.status(200).json({ success: true, message: "Document deleted" });
@@ -87,24 +87,24 @@ export async function deleteDocument(req, res) {
 }
 
 export async function viewDocument(req, res) {
-  const documentId = req.params.id;
+  const document = req.document;
   try {
-    const document = await db.oneOrNone(
+    const result = await db.oneOrNone(
       `
         SELECT id, title, content, owner_id, created_at, updated_at
         FROM documents
         WHERE id = $1
         `,
-      [documentId],
+      [document.id],
     );
 
-    if (!document) {
+    if (!result) {
       return res
         .status(404)
         .json({ success: false, message: "Document not found" });
     }
 
-    return res.status(200).json({ success: true, document });
+    return res.status(200).json({ success: true, document: result });
   } catch (error) {
     return res.status(500).json({
       success: false,
@@ -114,28 +114,28 @@ export async function viewDocument(req, res) {
 }
 
 export async function updateDocument(req, res) {
-  const documentId = req.params.id;
+  const document = req.document;
   const title = sanitize(req.body.title);
   const content = sanitize(req.body.content);
 
   try {
-    const document = await db.oneOrNone(
+    const result = await db.oneOrNone(
       `
         UPDATE documents
         SET title = $1, content = $2, updated_at = NOW()
         WHERE id = $3
         RETURNING id, title, content, owner_id, created_at, updated_at
         `,
-      [title, content, documentId],
+      [title, content, document.id],
     );
 
-    if (!document) {
+    if (!result) {
       return res
         .status(404)
         .json({ success: false, message: "Document not found" });
     }
 
-    return res.status(200).json({ success: true, document });
+    return res.status(200).json({ success: true, document: result });
   } catch (error) {
     return res.status(500).json({
       success: false,
