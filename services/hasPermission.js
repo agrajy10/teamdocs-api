@@ -1,6 +1,6 @@
 import db from "../db/index.js";
 
-async function hasPermission(userId, permission) {
+async function hasPermission(userId, permission, teamId) {
   const result = await db.query(
     `
     SELECT 1
@@ -10,8 +10,9 @@ async function hasPermission(userId, permission) {
     WHERE u.id = $1
       AND p.name = $2
       AND u.is_active = true
+      AND u.team_id = $3
     `,
-    [userId, permission],
+    [userId, permission, teamId],
   );
 
   return result.length > 0;

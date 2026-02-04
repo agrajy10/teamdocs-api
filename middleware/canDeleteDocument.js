@@ -4,12 +4,13 @@ import isDocumentOwner from "../services/isDocumentOwner.js";
 async function canDeleteDocument(req, res, next) {
   const userId = req.userId;
   const document = req.document;
+  const teamId = req.teamId;
 
-  if (await isDocumentOwner(document.owner_id, userId)) {
+  if (await isDocumentOwner(document.owner_id, userId, teamId)) {
     return next();
   }
 
-  if (await hasPermission(userId, "docs:delete")) {
+  if (await hasPermission(userId, "docs:delete", teamId)) {
     return next();
   }
 

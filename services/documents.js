@@ -5,15 +5,16 @@ export async function createDocument(req, res) {
   const title = sanitize(req.body.title);
   const content = sanitize(req.body.content);
   const userId = req.userId;
+  const teamId = req.teamId;
 
   try {
     const document = await db.one(
       `
-        INSERT INTO documents (title, content, owner_id)
-        VALUES ($1, $2, $3)
+        INSERT INTO documents (title, content, owner_id, team_id)
+        VALUES ($1, $2, $3, $4)
         RETURNING id, title, content, owner_id, created_at, updated_at
         `,
-      [title, content, userId],
+      [title, content, userId, teamId],
     );
 
     return res.status(201).json({ success: true, document });
@@ -26,12 +27,16 @@ export async function createDocument(req, res) {
 }
 
 export async function getAllDocuments(req, res) {
+  const teamId = req.teamId;
+
   try {
     const documents = await db.manyOrNone(
       `
         SELECT id, title, content, created_at, updated_at
         FROM documents
+        WHERE team_id = $1
         `,
+      [teamId],
     );
 
     return res.status(200).json({ success: true, documents });
@@ -45,6 +50,7 @@ export async function getAllDocuments(req, res) {
 
 export async function getMyDocuments(req, res) {
   const userId = req.userId;
+  const teamId = req.teamId;
 
   try {
     const documents = await db.manyOrNone(
@@ -52,8 +58,9 @@ export async function getMyDocuments(req, res) {
         SELECT id, title, content, owner_id, created_at, updated_at
         FROM documents
         WHERE owner_id = $1
+        AND team_id = $2
         `,
-      [userId],
+      [userId, teamId],
     );
 
     return res.status(200).json({ success: true, documents });
@@ -67,14 +74,16 @@ export async function getMyDocuments(req, res) {
 
 export async function deleteDocument(req, res) {
   const document = req.document;
+  const teamId = req.teamId;
 
   try {
     await db.query(
       `
         DELETE FROM documents
         WHERE id = $1 
+        AND team_id = $2
         `,
-      [document.id],
+      [document.id, teamId],
     );
 
     return res.status(200).json({ success: true, message: "Document deleted" });
@@ -88,14 +97,16 @@ export async function deleteDocument(req, res) {
 
 export async function viewDocument(req, res) {
   const document = req.document;
+  const teamId = req.teamId;
   try {
     const result = await db.oneOrNone(
       `
         SELECT id, title, content, owner_id, created_at, updated_at
         FROM documents
         WHERE id = $1
+        AND team_id = $2
         `,
-      [document.id],
+      [document.id, teamId],
     );
 
     if (!result) {
@@ -118,15 +129,18 @@ export async function updateDocument(req, res) {
   const title = sanitize(req.body.title);
   const content = sanitize(req.body.content);
 
+  const teamId = req.teamId;
+
   try {
     const result = await db.oneOrNone(
       `
         UPDATE documents
         SET title = $1, content = $2, updated_at = NOW()
         WHERE id = $3
+        AND team_id = $4
         RETURNING id, title, content, owner_id, created_at, updated_at
         `,
-      [title, content, document.id],
+      [title, content, document.id, teamId],
     );
 
     if (!result) {
