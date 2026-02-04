@@ -1,17 +1,13 @@
 import request from "supertest";
 import app from "../helpers/testApp";
 import { begin, rollback } from "../helpers/db";
-import db from "../../db/index.js";
+import seedTeam from "../helpers/seedTeam.js";
 
 let teamId;
 
 beforeEach(async () => {
   await begin();
-  const team = await db.one(
-    "INSERT INTO teams (name) VALUES ($1) RETURNING id",
-    ["Test Team"],
-  );
-  teamId = team.id;
+  teamId = await seedTeam();
 });
 
 afterEach(async () => {
