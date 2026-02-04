@@ -24,6 +24,7 @@ router.post(
       .withMessage(
         "Password must be 8+ chars, include uppercase, lowercase, number and special character",
       ),
+    body("team_id").notEmpty().withMessage("Team ID is required"),
   ],
   handleValidationError,
   register,

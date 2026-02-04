@@ -2,7 +2,17 @@ import db from "../db/index.js";
 import hashPassword from "../utils/hashPassword.js";
 
 async function register(req, res) {
-  const { email, password, role } = req.body;
+  const { email, password, role, team_id } = req.body;
+
+  const { exists: teamExists } = await db.one(
+    "SELECT EXISTS (SELECT 1 FROM teams WHERE id = $1)",
+    [team_id],
+  );
+
+  if (!teamExists) {
+    return res.status(400).json({ error: "Team does not exist" });
+  }
+
   const { exists: emailExists } = await db.one(
     "SELECT EXISTS (SELECT 1 FROM users WHERE email = $1)",
     [email],
@@ -22,8 +32,9 @@ async function register(req, res) {
     return res.status(400).json({ error: "Invalid user role" });
   }
   await db.query(
-    "INSERT INTO users(email, password_hash, is_active, created_at, updated_at, role_id) VALUES($1, $2, $3, NOW(), NOW(), $4) RETURNING *",
-    [email, hashedPassword, true, role_id],
+    `INSERT INTO users(email, password_hash, is_active, created_at, updated_at, role_id, team_id) 
+    VALUES($1, $2, $3, NOW(), NOW(), $4, $5) RETURNING *`,
+    [email, hashedPassword, true, role_id, team_id],
   );
 
   return res.status(201).json({ success: true });
