@@ -9,11 +9,11 @@ async function authenticateSession(req, res, next) {
 
   const session = await db.oneOrNone(
     `
-            SELECT user_id
-            FROM sessions
-            WHERE id = $1
-            AND expires_at > NOW()
-            `,
+      SELECT user_id
+      FROM sessions
+      WHERE id = $1
+      AND expires_at > NOW()
+      `,
     [sessionId],
   );
 
@@ -23,6 +23,16 @@ async function authenticateSession(req, res, next) {
     });
   }
 
+  const team = await db.oneOrNone(
+    `
+      SELECT team_id
+      FROM users
+      WHERE id = $1
+      `,
+    [session.user_id],
+  );
+
+  req.teamId = team.team_id;
   req.userId = session.user_id;
   next();
 }
