@@ -7,6 +7,8 @@ async function seedUser(overrides = {}) {
   const role = overrides.role || "member";
   const passwordHash = await hashPassword(password);
 
+  const teamId = overrides.teamId || null;
+
   const { role_id } = await db.oneOrNone(
     "SELECT id as role_id FROM roles WHERE name = $1",
     [role],
@@ -14,11 +16,11 @@ async function seedUser(overrides = {}) {
 
   return db.query(
     `
-    INSERT INTO users (email, password_hash, is_active, created_at, updated_at, role_id)
-    VALUES ($1, $2, $3, NOW(), NOW(), $4)
+    INSERT INTO users (email, password_hash, is_active, created_at, updated_at, role_id, team_id)
+    VALUES ($1, $2, $3, NOW(), NOW(), $4, $5)
     RETURNING *
     `,
-    [email, passwordHash, true, role_id],
+    [email, passwordHash, true, role_id, teamId],
   );
 }
 

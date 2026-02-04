@@ -2,9 +2,13 @@ import request from "supertest";
 import app from "../helpers/testApp";
 import { begin, rollback } from "../helpers/db";
 import seedUser from "../helpers/seedUser";
+import seedTeam from "../helpers/seedTeam.js";
+
+let teamId;
 
 beforeEach(async () => {
   await begin();
+  teamId = await seedTeam();
 });
 
 const endpoint = "/auth/login";
@@ -19,7 +23,7 @@ describe(`POST ${endpoint}`, () => {
   });
 
   it("rejects invalid credentials", async () => {
-    await seedUser();
+    await seedUser({ teamId });
     const res = await request(app).post(endpoint).send({
       email: "test@example.com",
       password: "WrongPass1!",
@@ -28,7 +32,7 @@ describe(`POST ${endpoint}`, () => {
   });
 
   it("starts a session", async () => {
-    await seedUser();
+    await seedUser({ teamId });
     const res = await request(app).post(endpoint).send({
       email: "test@example.com",
       password: "StrongPass1!",
