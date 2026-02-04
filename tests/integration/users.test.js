@@ -4,9 +4,13 @@ import { begin, rollback } from "../helpers/db";
 import seedUser from "../helpers/seedUser.js";
 import db from "../../db/index.js";
 import setupAuth from "../helpers/setupAuth.js";
+import seedTeam from "../helpers/seedTeam.js";
+
+let teamId;
 
 beforeEach(async () => {
   await begin();
+  teamId = await seedTeam();
 });
 
 afterEach(async () => {
@@ -18,6 +22,7 @@ describe("GET /users", () => {
     const [user] = await seedUser({
       role,
       email: `${role}_users@example.com`,
+      teamId,
     });
     const { sessionId, csrfToken } = await setupAuth(user);
 
@@ -39,6 +44,7 @@ describe("GET /users", () => {
     const [member] = await seedUser({
       role: "member",
       email: "member_users@example.com",
+      teamId,
     });
     const { sessionId, csrfToken } = await setupAuth(member);
 
@@ -61,10 +67,12 @@ describe("DELETE /users/:id", () => {
     const [admin] = await seedUser({
       role: "admin",
       email: "admin_delete@example.com",
+      teamId,
     });
     const [targetUser] = await seedUser({
       role: "member",
       email: "target_delete@example.com",
+      teamId,
     });
     const { sessionId, csrfToken } = await setupAuth(admin);
 
@@ -89,10 +97,12 @@ describe("DELETE /users/:id", () => {
       const [actor] = await seedUser({
         role,
         email: `${role}_delete@example.com`,
+        teamId,
       });
       const [targetUser] = await seedUser({
         role: "member",
         email: `target_delete_${role}@example.com`,
+        teamId,
       });
       const { sessionId, csrfToken } = await setupAuth(actor);
 
@@ -116,6 +126,7 @@ describe("DELETE /users/:id", () => {
     const [targetUser] = await seedUser({
       role: "member",
       email: "target_delete3@example.com",
+      teamId,
     });
     const res = await request(app).delete(`/users/${targetUser.id}`);
     expect(res.status).toBe(401);
