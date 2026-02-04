@@ -4,9 +4,13 @@ import { begin, rollback } from "../helpers/db";
 import seedUser from "../helpers/seedUser.js";
 import db from "../../db/index.js";
 import setupAuth from "../helpers/setupAuth.js";
+import seedTeam from "../helpers/seedTeam.js";
+
+let teamId;
 
 beforeEach(async () => {
   await begin();
+  teamId = await seedTeam();
 });
 
 afterEach(async () => {
@@ -20,6 +24,7 @@ describe("POST /documents", () => {
       const [user] = await seedUser({
         role,
         email: `${role}_create@example.com`,
+        teamId,
       });
       const { sessionId, csrfToken } = await setupAuth(user);
 
@@ -45,7 +50,7 @@ describe("POST /documents", () => {
   });
 
   it("should return 401 if CSRF token is missing", async () => {
-    const [user] = await seedUser();
+    const [user] = await seedUser({ teamId });
     const { sessionId } = await setupAuth(user);
 
     const res = await request(app)
@@ -60,7 +65,7 @@ describe("POST /documents", () => {
   });
 
   it("should return 401 if CSRF token is invalid", async () => {
-    const [user] = await seedUser();
+    const [user] = await seedUser({ teamId });
     const { sessionId, csrfToken } = await setupAuth(user);
 
     const res = await request(app)
@@ -76,7 +81,7 @@ describe("POST /documents", () => {
   });
 
   it("should return 400 if title is missing", async () => {
-    const [user] = await seedUser();
+    const [user] = await seedUser({ teamId });
     const { sessionId, csrfToken } = await setupAuth(user);
 
     const res = await request(app)
@@ -91,7 +96,7 @@ describe("POST /documents", () => {
   });
 
   it("should return 400 if content is missing", async () => {
-    const [user] = await seedUser();
+    const [user] = await seedUser({ teamId });
     const { sessionId, csrfToken } = await setupAuth(user);
 
     const res = await request(app)
@@ -106,7 +111,7 @@ describe("POST /documents", () => {
   });
 
   it("should return 400 if content is not a string", async () => {
-    const [user] = await seedUser();
+    const [user] = await seedUser({ teamId });
     const { sessionId, csrfToken } = await setupAuth(user);
 
     const res = await request(app)
@@ -133,9 +138,9 @@ describe("POST /documents", () => {
     // Create user with this role
     const email = "restricted@example.com";
     const { id: userId } = await db.one(
-      `INSERT INTO users (email, password_hash, is_active, created_at, updated_at, role_id)
-         VALUES ($1, 'hash', true, NOW(), NOW(), $2) RETURNING id`,
-      [email, roleId],
+      `INSERT INTO users (email, password_hash, is_active, created_at, updated_at, role_id, team_id)
+         VALUES ($1, 'hash', true, NOW(), NOW(), $2, $3) RETURNING id`,
+      [email, roleId, teamId],
     );
 
     const { sessionId, csrfToken } = await setupAuth({ id: userId });
@@ -156,12 +161,12 @@ describe("POST /documents", () => {
 
 describe("GET /documents/:id", () => {
   it("allows owner to view their own document", async () => {
-    const [user] = await seedUser({ email: "owner_view@example.com" });
+    const [user] = await seedUser({ email: "owner_view@example.com", teamId });
     const { sessionId, csrfToken } = await setupAuth(user);
 
     const doc = await db.one(
-      "INSERT INTO documents (title, content, owner_id) VALUES ($1, $2, $3) RETURNING id, title",
-      ["My View Doc", "Content", user.id],
+      "INSERT INTO documents (title, content, owner_id, team_id) VALUES ($1, $2, $3, $4) RETURNING id, title",
+      ["My View Doc", "Content", user.id, teamId],
     );
 
     const res = await request(app)
@@ -176,15 +181,17 @@ describe("GET /documents/:id", () => {
     const [admin] = await seedUser({
       email: "admin_view@example.com",
       role: "admin",
+      teamId,
     });
     const [other] = await seedUser({
       email: "other_admin_view_target@example.com",
+      teamId,
     });
     const { sessionId, csrfToken } = await setupAuth(admin);
 
     const doc = await db.one(
-      "INSERT INTO documents (title, content, owner_id) VALUES ($1, $2, $3) RETURNING id, title",
-      ["Target View Doc", "Content", other.id],
+      "INSERT INTO documents (title, content, owner_id, team_id) VALUES ($1, $2, $3, $4) RETURNING id, title",
+      ["Target View Doc", "Content", other.id, teamId],
     );
 
     const res = await request(app)
@@ -199,15 +206,17 @@ describe("GET /documents/:id", () => {
     const [manager] = await seedUser({
       email: "manager_view@example.com",
       role: "manager",
+      teamId,
     });
     const [other] = await seedUser({
       email: "other_manager_view_target@example.com",
+      teamId,
     });
     const { sessionId, csrfToken } = await setupAuth(manager);
 
     const doc = await db.one(
-      "INSERT INTO documents (title, content, owner_id) VALUES ($1, $2, $3) RETURNING id, title",
-      ["Target View Doc", "Content", other.id],
+      "INSERT INTO documents (title, content, owner_id, team_id) VALUES ($1, $2, $3, $4) RETURNING id, title",
+      ["Target View Doc", "Content", other.id, teamId],
     );
 
     const res = await request(app)
@@ -221,12 +230,15 @@ describe("GET /documents/:id", () => {
 
 describe("PUT /documents/:id", () => {
   it("allows owner to update their own document", async () => {
-    const [user] = await seedUser({ email: "owner_update@example.com" });
+    const [user] = await seedUser({
+      email: "owner_update@example.com",
+      teamId,
+    });
     const { sessionId, csrfToken } = await setupAuth(user);
 
     const doc = await db.one(
-      "INSERT INTO documents (title, content, owner_id) VALUES ($1, $2, $3) RETURNING id",
-      ["Original Title", "Original Content", user.id],
+      "INSERT INTO documents (title, content, owner_id, team_id) VALUES ($1, $2, $3, $4) RETURNING id",
+      ["Original Title", "Original Content", user.id, teamId],
     );
 
     const res = await request(app)
@@ -242,9 +254,10 @@ describe("PUT /documents/:id", () => {
     expect(res.body.document.title).toBe("Updated Title");
     expect(res.body.document.content).toBe("Updated Content");
 
-    const updatedDoc = await db.one("SELECT * FROM documents WHERE id = $1", [
-      doc.id,
-    ]);
+    const updatedDoc = await db.one(
+      "SELECT * FROM documents WHERE id = $1 AND team_id = $2",
+      [doc.id, teamId],
+    );
     expect(updatedDoc.title).toBe("Updated Title");
   });
 
@@ -254,15 +267,17 @@ describe("PUT /documents/:id", () => {
       const [actor] = await seedUser({
         role,
         email: `${role}_update@example.com`,
+        teamId,
       });
       const [other] = await seedUser({
         email: `other_${role}_target@example.com`,
+        teamId,
       });
       const { sessionId, csrfToken } = await setupAuth(actor);
 
       const doc = await db.one(
-        "INSERT INTO documents (title, content, owner_id) VALUES ($1, $2, $3) RETURNING id",
-        ["Original Title", "Original Content", other.id],
+        "INSERT INTO documents (title, content, owner_id, team_id) VALUES ($1, $2, $3, $4) RETURNING id",
+        ["Original Title", "Original Content", other.id, teamId],
       );
 
       const res = await request(app)
@@ -280,15 +295,19 @@ describe("PUT /documents/:id", () => {
   );
 
   it("prevents member from updating other user's document", async () => {
-    const [member] = await seedUser({ email: "member_update@example.com" });
+    const [member] = await seedUser({
+      email: "member_update@example.com",
+      teamId,
+    });
     const [other] = await seedUser({
       email: "other_update_target@example.com",
+      teamId,
     });
     const { sessionId, csrfToken } = await setupAuth(member);
 
     const doc = await db.one(
-      "INSERT INTO documents (title, content, owner_id) VALUES ($1, $2, $3) RETURNING id",
-      ["Original Title", "Content", other.id],
+      "INSERT INTO documents (title, content, owner_id, team_id) VALUES ($1, $2, $3, $4) RETURNING id",
+      ["Original Title", "Content", other.id, teamId],
     );
 
     const res = await request(app)
@@ -305,11 +324,11 @@ describe("PUT /documents/:id", () => {
   });
 
   it("returns 400 if title is missing", async () => {
-    const [user] = await seedUser();
+    const [user] = await seedUser({ teamId });
     const { sessionId, csrfToken } = await setupAuth(user);
     const doc = await db.one(
-      "INSERT INTO documents (title, content, owner_id) VALUES ($1, $2, $3) RETURNING id",
-      ["Title", "Content", user.id],
+      "INSERT INTO documents (title, content, owner_id, team_id) VALUES ($1, $2, $3, $4) RETURNING id",
+      ["Title", "Content", user.id, teamId],
     );
 
     const res = await request(app)
@@ -324,7 +343,7 @@ describe("PUT /documents/:id", () => {
   });
 
   it("returns 404 if document does not exist", async () => {
-    const [user] = await seedUser();
+    const [user] = await seedUser({ teamId });
     const { sessionId, csrfToken } = await setupAuth(user);
 
     const res = await request(app)
@@ -343,12 +362,12 @@ describe("PUT /documents/:id", () => {
 
 describe("DELETE /documents/:id", () => {
   it("allows member to delete their own document", async () => {
-    const [user] = await seedUser({ email: "member1@example.com" });
+    const [user] = await seedUser({ email: "member1@example.com", teamId });
     const { sessionId, csrfToken } = await setupAuth(user);
 
     const doc = await db.one(
-      "INSERT INTO documents (title, content, owner_id) VALUES ($1, $2, $3) RETURNING id",
-      ["My Doc", "Content", user.id],
+      "INSERT INTO documents (title, content, owner_id, team_id) VALUES ($1, $2, $3, $4) RETURNING id",
+      ["My Doc", "Content", user.id, teamId],
     );
 
     const res = await request(app)
@@ -365,13 +384,13 @@ describe("DELETE /documents/:id", () => {
   });
 
   it("prevents member from deleting other user's document", async () => {
-    const [member] = await seedUser({ email: "member2@example.com" });
-    const [other] = await seedUser({ email: "other@example.com" });
+    const [member] = await seedUser({ email: "member2@example.com", teamId });
+    const [other] = await seedUser({ email: "other@example.com", teamId });
     const { sessionId, csrfToken } = await setupAuth(member);
 
     const doc = await db.one(
-      "INSERT INTO documents (title, content, owner_id) VALUES ($1, $2, $3) RETURNING id",
-      ["Other Doc", "Content", other.id],
+      "INSERT INTO documents (title, content, owner_id, team_id) VALUES ($1, $2, $3, $4) RETURNING id",
+      ["Other Doc", "Content", other.id, teamId],
     );
 
     const res = await request(app)
@@ -382,9 +401,10 @@ describe("DELETE /documents/:id", () => {
     expect(res.status).toBe(403);
     expect(res.body.error).toBe("Permission denied");
 
-    const found = await db.oneOrNone("SELECT id FROM documents WHERE id = $1", [
-      doc.id,
-    ]);
+    const found = await db.oneOrNone(
+      "SELECT id FROM documents WHERE id = $1 AND team_id = $2",
+      [doc.id, teamId],
+    );
     expect(found).not.toBeNull();
   });
 
@@ -392,13 +412,17 @@ describe("DELETE /documents/:id", () => {
     const [admin] = await seedUser({
       email: "admin@example.com",
       role: "admin",
+      teamId,
     });
-    const [other] = await seedUser({ email: "other_admin_target@example.com" });
+    const [other] = await seedUser({
+      email: "other_admin_target@example.com",
+      teamId,
+    });
     const { sessionId, csrfToken } = await setupAuth(admin);
 
     const doc = await db.one(
-      "INSERT INTO documents (title, content, owner_id) VALUES ($1, $2, $3) RETURNING id",
-      ["Target Doc", "Content", other.id],
+      "INSERT INTO documents (title, content, owner_id, team_id) VALUES ($1, $2, $3, $4) RETURNING id",
+      ["Target Doc", "Content", other.id, teamId],
     );
 
     const res = await request(app)
@@ -418,15 +442,17 @@ describe("DELETE /documents/:id", () => {
     const [manager] = await seedUser({
       email: "manager@example.com",
       role: "manager",
+      teamId,
     });
     const [other] = await seedUser({
       email: "other_manager_target@example.com",
+      teamId,
     });
     const { sessionId, csrfToken } = await setupAuth(manager);
 
     const doc = await db.one(
-      "INSERT INTO documents (title, content, owner_id) VALUES ($1, $2, $3) RETURNING id",
-      ["Target Doc", "Content", other.id],
+      "INSERT INTO documents (title, content, owner_id, team_id) VALUES ($1, $2, $3, $4) RETURNING id",
+      ["Target Doc", "Content", other.id, teamId],
     );
 
     const res = await request(app)
@@ -448,12 +474,13 @@ describe("GET /documents", () => {
     const [admin] = await seedUser({
       role: "admin",
       email: "admin_list@example.com",
+      teamId,
     });
     const { sessionId, csrfToken } = await setupAuth(admin);
 
     await db.none(
-      "INSERT INTO documents (title, content, owner_id) VALUES ($1, $2, $3)",
-      ["Doc 1", "Content", admin.id],
+      "INSERT INTO documents (title, content, owner_id, team_id) VALUES ($1, $2, $3, $4)",
+      ["Doc 1", "Content", admin.id, teamId],
     );
 
     const res = await request(app)
@@ -468,12 +495,13 @@ describe("GET /documents", () => {
     const [manager] = await seedUser({
       role: "manager",
       email: "manager_list@example.com",
+      teamId,
     });
     const { sessionId, csrfToken } = await setupAuth(manager);
 
     await db.none(
-      "INSERT INTO documents (title, content, owner_id) VALUES ($1, $2, $3)",
-      ["Doc 1", "Content", manager.id],
+      "INSERT INTO documents (title, content, owner_id, team_id) VALUES ($1, $2, $3, $4)",
+      ["Doc 1", "Content", manager.id, teamId],
     );
 
     const res = await request(app)
@@ -488,6 +516,7 @@ describe("GET /documents", () => {
     const [member] = await seedUser({
       role: "member",
       email: "member_list@example.com",
+      teamId,
     });
     const { sessionId, csrfToken } = await setupAuth(member);
 
@@ -505,17 +534,18 @@ describe("GET /documents/my-documents", () => {
     const [user] = await seedUser({
       role: "member",
       email: "my_docs@example.com",
+      teamId,
     });
-    const [other] = await seedUser({ email: "other_docs@example.com" });
+    const [other] = await seedUser({ email: "other_docs@example.com", teamId });
     const { sessionId, csrfToken } = await setupAuth(user);
 
     await db.none(
-      "INSERT INTO documents (title, content, owner_id) VALUES ($1, $2, $3)",
-      ["My Doc", "Content", user.id],
+      "INSERT INTO documents (title, content, owner_id, team_id) VALUES ($1, $2, $3, $4)",
+      ["My Doc", "Content", user.id, teamId],
     );
     await db.none(
-      "INSERT INTO documents (title, content, owner_id) VALUES ($1, $2, $3)",
-      ["Other Doc", "Content", other.id],
+      "INSERT INTO documents (title, content, owner_id, team_id) VALUES ($1, $2, $3, $4)",
+      ["Other Doc", "Content", other.id, teamId],
     );
 
     const res = await request(app)
