@@ -4,7 +4,7 @@ TeamDocs API is a document management system built with Express.js and PostgreSQ
 
 ## Features
 
-- **User Authentication**: Secure registration and login using sessions and cookies.
+- **User Authentication**: Secure login using sessions and cookies.
 - **Role-Based Access Control (RBAC)**: Granular permissions for Admins, Managers, and Members.
 - **Document Management**: Create, read, update, and delete documents with ownership and permission checks.
 - **Security**: Input validation, HTML sanitization, and CSRF protection.
@@ -31,11 +31,10 @@ TeamDocs API is a document management system built with Express.js and PostgreSQ
 
 ### Authentication (`/auth`)
 
-| Method | Endpoint         | Description         | Access        |
-| :----- | :--------------- | :------------------ | :------------ |
-| `POST` | `/auth/register` | Register a new user | Public        |
-| `POST` | `/auth/login`    | Login user          | Public        |
-| `POST` | `/auth/logout`   | Logout user         | Authenticated |
+| Method | Endpoint       | Description | Access        |
+| :----- | :------------- | :---------- | :------------ |
+| `POST` | `/auth/login`  | Login user  | Public        |
+| `POST` | `/auth/logout` | Logout user | Authenticated |
 
 ### Users (`/users`)
 

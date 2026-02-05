@@ -1,34 +1,11 @@
 import { Router } from "express";
 import { body } from "express-validator";
 import handleValidationError from "../middleware/validation.middleware.js";
-import register from "../auth/register.js";
 import login from "../auth/login.js";
 import logout from "../auth/logout.js";
 import limiter from "../middleware/rateLimiter.js";
 
 const router = Router();
-
-router.post(
-  "/register",
-  limiter,
-  [
-    body("role")
-      .notEmpty()
-      .isIn(["member", "manager", "admin"])
-      .withMessage("Invalid user role"),
-    body("email").isEmail(),
-    body("password")
-      .matches(
-        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
-      )
-      .withMessage(
-        "Password must be 8+ chars, include uppercase, lowercase, number and special character",
-      ),
-    body("team_id").notEmpty().withMessage("Team ID is required"),
-  ],
-  handleValidationError,
-  register,
-);
 
 router.post(
   "/login",
