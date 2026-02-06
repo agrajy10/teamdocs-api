@@ -1,4 +1,4 @@
-import db from "../../db/index.js";
+import { getDb } from "../../db/index.js";
 import hashPassword from "../../utils/hashPassword.js";
 
 async function seedUser(overrides = {}) {
@@ -8,13 +8,14 @@ async function seedUser(overrides = {}) {
   const passwordHash = await hashPassword(password);
 
   const teamId = overrides.teamId || null;
+  const isSuperAdmin = overrides.is_superadmin || false;
 
-  const { role_id } = await db.oneOrNone(
+  const { role_id } = await getDb().oneOrNone(
     "SELECT id as role_id FROM roles WHERE name = $1",
     [role],
   );
 
-  return db.query(
+  return getDb().query(
     `
     INSERT INTO users (email, password_hash, is_active, created_at, updated_at, role_id, team_id)
     VALUES ($1, $2, $3, NOW(), NOW(), $4, $5)

@@ -27,4 +27,16 @@ const dbConfig = {
 
 const db = pgp(dbConfig);
 
-export default db;
+let testTransaction = null;
+
+const getDb = () => testTransaction || db;
+
+const setTestTransaction = (tx) => {
+  testTransaction = tx;
+};
+
+const clearTestTransaction = () => {
+  testTransaction = null;
+};
+
+export { getDb, setTestTransaction, clearTestTransaction };

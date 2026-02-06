@@ -1,7 +1,7 @@
-import db from "../../db/index.js";
+import { getDb } from "../../db/index.js";
 
 async function seedTeam() {
-  const team = await db.one(
+  const team = await getDb().one(
     "INSERT INTO teams (name) VALUES ($1) RETURNING id",
     ["Test Team"],
   );

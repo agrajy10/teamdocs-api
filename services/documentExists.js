@@ -1,7 +1,7 @@
-import db from "../db/index.js";
+import { getDb } from "../db/index.js";
 
 async function documentExists(documentId, teamId) {
-  const result = await db.query(
+  const result = await getDb().query(
     `
     SELECT id, owner_id, team_id
     FROM documents

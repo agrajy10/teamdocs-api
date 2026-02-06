@@ -1,11 +1,11 @@
-import db from "../db/index.js";
+import { getDb } from "../db/index.js";
 
 async function checkUserInTeam(req, res, next) {
   const userIdToDelete = req.params.id;
   const teamId = req.teamId;
 
   try {
-    const user = await db.oneOrNone(
+    const user = await getDb().oneOrNone(
       "SELECT id FROM users WHERE id = $1 AND team_id IS NOT DISTINCT FROM $2",
       [userIdToDelete, teamId],
     );
