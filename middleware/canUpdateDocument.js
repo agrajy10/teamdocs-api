@@ -10,7 +10,7 @@ async function canUpdateDocument(req, res, next) {
     return next();
   }
 
-  if (await hasPermission(userId, "docs:update", teamId)) {
+  if (await hasPermission(req.db, userId, "docs:update", teamId)) {
     return next();
   }
 

@@ -3,12 +3,14 @@ import cookieParser from "cookie-parser";
 import authRoutes from "./routes/auth.js";
 import documentRoutes from "./routes/documents.js";
 import userRoutes from "./routes/users.js";
+import injectDb from "./middleware/injectDb.js";
 
 const app = e();
 const port = 3000;
 
 app.use(e.json());
 app.use(cookieParser());
+app.use(injectDb);
 app.set("trust proxy", true);
 app.use("/auth", authRoutes);
 app.use("/users", userRoutes);

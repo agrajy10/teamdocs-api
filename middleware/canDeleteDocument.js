@@ -10,7 +10,7 @@ async function canDeleteDocument(req, res, next) {
     return next();
   }
 
-  if (await hasPermission(userId, "docs:delete", teamId)) {
+  if (await hasPermission(req.db, userId, "docs:delete", teamId)) {
     return next();
   }
 

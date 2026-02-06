@@ -1,9 +1,9 @@
-import { getDb } from "../../db/index.js";
+import db from "../../db/index.js";
 
 export async function begin() {
-  await getDb().query("BEGIN");
+  await db.query("BEGIN");
 }
 
 export async function rollback() {
-  await getDb().query("ROLLBACK");
+  await db.query("ROLLBACK");
 }

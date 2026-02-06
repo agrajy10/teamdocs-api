@@ -1,5 +1,3 @@
-import { getDb } from "../db/index.js";
-
 async function authenticateSession(req, res, next) {
   const sessionId = req.cookies.session_id;
   if (!sessionId)
@@ -7,7 +5,7 @@ async function authenticateSession(req, res, next) {
       message: "Invalid session token",
     });
 
-  const session = await getDb().oneOrNone(
+  const session = await req.db.oneOrNone(
     `
       SELECT user_id
       FROM sessions
@@ -23,7 +21,7 @@ async function authenticateSession(req, res, next) {
     });
   }
 
-  const team = await getDb().oneOrNone(
+  const team = await req.db.oneOrNone(
     `
       SELECT team_id
       FROM users

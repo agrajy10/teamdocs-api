@@ -10,7 +10,7 @@ async function canViewDocument(req, res, next) {
     return next();
   }
 
-  if (await hasPermission(userId, "docs:read", teamId)) {
+  if (await hasPermission(req.db, userId, "docs:read", teamId)) {
     return next();
   }
 

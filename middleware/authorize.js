@@ -9,7 +9,7 @@ function authorize(permission) {
       return res.status(403).json({ error: "Authentication required" });
     }
 
-    const allowed = await hasPermission(userId, permission, teamId);
+    const allowed = await hasPermission(req.db, userId, permission, teamId);
 
     if (!allowed) {
       return res.status(403).json({ error: "Access denied" });

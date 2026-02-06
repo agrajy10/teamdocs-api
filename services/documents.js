@@ -1,4 +1,3 @@
-import { getDb } from "../db/index.js";
 import sanitize from "sanitize-html";
 
 export async function createDocument(req, res) {
@@ -8,7 +7,7 @@ export async function createDocument(req, res) {
   const teamId = req.teamId;
 
   try {
-    const document = await getDb().one(
+    const document = await req.db.one(
       `
         INSERT INTO documents (title, content, owner_id, team_id)
         VALUES ($1, $2, $3, $4)
@@ -30,7 +29,7 @@ export async function getAllDocuments(req, res) {
   const teamId = req.teamId;
 
   try {
-    const documents = await getDb().manyOrNone(
+    const documents = await db.manyOrNone(
       `
         SELECT id, title, content, created_at, updated_at
         FROM documents
@@ -53,7 +52,7 @@ export async function getMyDocuments(req, res) {
   const teamId = req.teamId;
 
   try {
-    const documents = await getDb().manyOrNone(
+    const documents = await db.manyOrNone(
       `
         SELECT id, title, content, owner_id, created_at, updated_at
         FROM documents
@@ -77,7 +76,7 @@ export async function deleteDocument(req, res) {
   const teamId = req.teamId;
 
   try {
-    await getDb().query(
+    await db.query(
       `
         DELETE FROM documents
         WHERE id = $1 
@@ -99,7 +98,7 @@ export async function viewDocument(req, res) {
   const document = req.document;
   const teamId = req.teamId;
   try {
-    const result = await db.oneOrNone(
+    const result = await req.db.oneOrNone(
       `
         SELECT id, title, content, owner_id, created_at, updated_at
         FROM documents

@@ -4,7 +4,7 @@ async function checkDocumentExists(req, res, next) {
   const documentId = req.params.id;
   const teamId = req.teamId;
 
-  const document = await documentExists(documentId, teamId);
+  const document = await documentExists(req.db, documentId, teamId);
 
   if (!document) {
     return res.status(404).json({ error: "Document not found" });

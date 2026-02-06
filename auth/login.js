@@ -1,11 +1,10 @@
 import crypto from "crypto";
 
 import comparePassword from "../utils/comparePassword.js";
-import { getDb } from "../db/index.js";
 
 async function login(req, res) {
   const { email, password } = req.body;
-  const { exists: emailExists } = await getDb().one(
+  const { exists: emailExists } = await req.db.one(
     "SELECT EXISTS (SELECT 1 FROM users WHERE email = $1)",
     [email],
   );
@@ -14,7 +13,7 @@ async function login(req, res) {
     return res.status(401).json({ error: "Invalid credentials" });
   }
 
-  const user = await getDb().one(
+  const user = await req.db.one(
     "SELECT id, email, password_hash from users WHERE email = $1",
     [email],
   );
@@ -25,7 +24,7 @@ async function login(req, res) {
     const sessionId = crypto.randomUUID();
     const userAgent = req.headers["user-agent"] || null;
     const ip = req.ip || null;
-    await getDb().query(
+    await req.db.query(
       `INSERT INTO sessions (id, user_id, created_at, expires_at, user_agent, ip_address) 
       VALUES ($1, $2, NOW(), NOW() + INTERVAL '1 day', $3, $4)`,
       [sessionId, user.id, userAgent, ip],
