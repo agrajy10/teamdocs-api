@@ -20,7 +20,7 @@ router.get(
 router.delete(
   "/:id",
   authenticateSession,
-  authorize("users:delete"),
+  authorize("members:delete"),
   checkUserInTeam,
   deleteUser,
 );
