@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { body } from "express-validator";
+import { PASSWORD_REGEX } from "../constants/constants.js";
 import authenticateSession from "../middleware/authenticateSession.js";
 import isSuperAdmin from "../middleware/isSuperAdmin.js";
 import csrfValidation from "../middleware/csrf.middleware.js";
@@ -18,7 +19,7 @@ router.post(
     body("admin.password")
       .notEmpty()
       .bail()
-      .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).{8,}$/)
+      .matches(PASSWORD_REGEX)
       .withMessage(
         "Password must contain at least one lowercase letter, one uppercase letter, one digit, and one special character",
       ),
