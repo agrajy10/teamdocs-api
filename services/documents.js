@@ -25,11 +25,11 @@ export async function createDocument(req, res) {
   }
 }
 
-export async function getAllDocuments(req, res) {
+export async function getDocuments(req, res) {
   const teamId = req.teamId;
 
   try {
-    const documents = await db.manyOrNone(
+    const documents = await req.db.manyOrNone(
       `
         SELECT id, title, content, created_at, updated_at
         FROM documents
@@ -52,7 +52,7 @@ export async function getMyDocuments(req, res) {
   const teamId = req.teamId;
 
   try {
-    const documents = await db.manyOrNone(
+    const documents = await req.db.manyOrNone(
       `
         SELECT id, title, content, owner_id, created_at, updated_at
         FROM documents
@@ -76,7 +76,7 @@ export async function deleteDocument(req, res) {
   const teamId = req.teamId;
 
   try {
-    await db.query(
+    await req.db.query(
       `
         DELETE FROM documents
         WHERE id = $1 
@@ -131,7 +131,7 @@ export async function updateDocument(req, res) {
   const teamId = req.teamId;
 
   try {
-    const result = await db.oneOrNone(
+    const result = await req.db.oneOrNone(
       `
         UPDATE documents
         SET title = $1, content = $2, updated_at = NOW()
