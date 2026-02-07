@@ -4,6 +4,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
+    "migrate": "node-pg-migrate", 
     "start": "node --watch ./app.js",
     "test": "cross-env NODE_ENV=TEST node --experimental-vm-modules node_modules/jest/bin/jest.js"
   },
@@ -25,6 +26,7 @@
   "devDependencies": {
     "cross-env": "^10.1.0",
     "jest": "^30.2.0",
+    "node-pg-migrate": "^8.0.4",
     "supertest": "^7.2.2"
   }
 }
