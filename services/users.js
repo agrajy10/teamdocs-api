@@ -1,5 +1,5 @@
 export async function getAllUsers(req, res) {
-  const teamId = req.query.team_id;
+  const teamId = req.teamId;
   const userId = req.userId;
   const users = await req.db.query(
     `SELECT u.id, u.email, u.is_active, u.created_at, u.updated_at, r.name AS role FROM users u 

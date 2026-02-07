@@ -13,9 +13,7 @@ router.get(
   "/",
   authenticateSession,
   authorize("members:view"),
-  [query("team_id").notEmpty().withMessage("Team ID is required")],
   handleValidationError,
-  isTeamAdmin,
   getAllUsers,
 );
 
