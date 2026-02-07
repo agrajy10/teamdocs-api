@@ -5,6 +5,7 @@ import authenticateSession from "../middleware/authenticateSession.js";
 import checkUserInTeam from "../middleware/checkUserInTeam.js";
 import { query } from "express-validator";
 import handleValidationError from "../middleware/validation.middleware.js";
+import isTeamAdmin from "../middleware/isTeamAdmin.js";
 
 const router = Router();
 
@@ -14,6 +15,7 @@ router.get(
   authorize("members:view"),
   [query("team_id").notEmpty().withMessage("Team ID is required")],
   handleValidationError,
+  isTeamAdmin,
   getAllUsers,
 );
 
