@@ -9,7 +9,6 @@ async function checkUserInTeam(req, res, next) {
     );
 
     if (!user) {
-      console.log("xxoxoxoo");
       return res.status(404).json({ error: "User not found" });
     }
 
