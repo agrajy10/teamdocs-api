@@ -4,6 +4,7 @@ import authRoutes from "./routes/auth.js";
 import documentRoutes from "./routes/documents.js";
 import userRoutes from "./routes/users.js";
 import injectDb from "./middleware/injectDb.js";
+import teamsRoutes from "./routes/teams.js";
 
 const app = e();
 const port = 3000;
@@ -15,6 +16,7 @@ app.set("trust proxy", true);
 app.use("/auth", authRoutes);
 app.use("/users", userRoutes);
 app.use("/documents", documentRoutes);
+app.use("/teams", teamsRoutes);
 
 if (process.env.NODE_ENV !== "TEST") {
   app.listen(port, () => {
