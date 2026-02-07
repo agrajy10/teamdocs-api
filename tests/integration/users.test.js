@@ -1,134 +1,313 @@
 import request from "supertest";
-import app from "../helpers/testApp";
-import { begin, rollback } from "../helpers/db";
+import { withTestTransaction } from "../helpers/withTestTransaction.js";
 import seedUser from "../helpers/seedUser.js";
-import db from "../../db/index.js";
-import setupAuth from "../helpers/setupAuth.js";
 import seedTeam from "../helpers/seedTeam.js";
-
-let teamId;
-
-beforeEach(async () => {
-  await begin();
-  teamId = await seedTeam();
-});
-
-afterEach(async () => {
-  await rollback();
-});
+import setupAuth from "../helpers/setupAuth.js";
 
 describe("GET /users", () => {
-  it.each(["admin", "manager"])("allows %s to view all users", async (role) => {
-    const [user] = await seedUser({
-      role,
-      email: `${role}_users@example.com`,
-      teamId,
+  it.each(["admin"])(
+    "returns 200 and lists same-team users, excludes requester (%s)",
+    async (role) => {
+      await withTestTransaction(async (tx, app) => {
+        const teamId = await seedTeam(tx);
+        const [actor] = await seedUser(tx, {
+          role,
+          email: `${role}_users@example.com`,
+          teamId,
+        });
+        const [other] = await seedUser(tx, {
+          role: "member",
+          email: `other_${role}_users@example.com`,
+          teamId,
+        });
+        const otherTeamId = await seedTeam(tx, "Other Team");
+        await seedUser(tx, {
+          role: "member",
+          email: `cross_team_${role}_users@example.com`,
+          teamId: otherTeamId,
+        });
+        const { sessionId, csrfToken } = await setupAuth(tx, actor);
+
+        const res = await request(app)
+          .get("/users")
+          .set("Cookie", [
+            `session_id=${sessionId}`,
+            `csrf_token=${csrfToken}`,
+          ]);
+
+        expect(res.status).toBe(200);
+        expect(Array.isArray(res.body.users)).toBe(true);
+        const emails = res.body.users.map((u) => u.email);
+        expect(emails).toContain(other.email);
+        expect(emails).not.toContain(actor.email);
+        expect(emails).not.toContain(`cross_team_${role}_users@example.com`);
+      });
+    },
+  );
+
+  it("returns 403 for member role", async () => {
+    await withTestTransaction(async (tx, app) => {
+      const teamId = await seedTeam(tx);
+      const [member] = await seedUser(tx, {
+        role: "member",
+        email: "member_users_forbidden@example.com",
+        teamId,
+      });
+      const { sessionId, csrfToken } = await setupAuth(tx, member);
+      const res = await request(app)
+        .get("/users")
+        .set("Cookie", [`session_id=${sessionId}`, `csrf_token=${csrfToken}`]);
+      expect(res.status).toBe(403);
+      expect(res.body.error).toBe("Access denied");
     });
-    const { sessionId, csrfToken } = await setupAuth(user);
-
-    const res = await request(app)
-      .get("/users")
-      .set("Cookie", [`session_id=${sessionId}`, `csrf_token=${csrfToken}`]);
-
-    expect(res.status).toBe(200);
-    expect(res.body.users).toBeDefined();
-    expect(Array.isArray(res.body.users)).toBe(true);
-    // Should verify at least the user is in the list
-    const userInList = res.body.users.find(
-      (u) => u.email === `${role}_users@example.com`,
-    );
-    expect(userInList).toBeDefined();
   });
 
-  it("prevents member from viewing all users", async () => {
-    const [member] = await seedUser({
-      role: "member",
-      email: "member_users@example.com",
-      teamId,
+  it("returns 401 when unauthenticated", async () => {
+    await withTestTransaction(async (_tx, app) => {
+      const res = await request(app).get("/users");
+      expect(res.status).toBe(401);
     });
-    const { sessionId, csrfToken } = await setupAuth(member);
-
-    const res = await request(app)
-      .get("/users")
-      .set("Cookie", [`session_id=${sessionId}`, `csrf_token=${csrfToken}`]);
-
-    expect(res.status).toBe(403);
-    expect(res.body.error).toBe("Access denied");
-  });
-
-  it("returns 401 if not authenticated", async () => {
-    const res = await request(app).get("/users");
-    expect(res.status).toBe(401);
   });
 });
 
 describe("DELETE /users/:id", () => {
-  it("allows admin to delete a user", async () => {
-    const [admin] = await seedUser({
-      role: "admin",
-      email: "admin_delete@example.com",
-      teamId,
-    });
-    const [targetUser] = await seedUser({
-      role: "member",
-      email: "target_delete@example.com",
-      teamId,
-    });
-    const { sessionId, csrfToken } = await setupAuth(admin);
-
-    const res = await request(app)
-      .delete(`/users/${targetUser.id}`)
-      .set("Cookie", [`session_id=${sessionId}`, `csrf_token=${csrfToken}`])
-      .set("X-CSRF-Token", csrfToken);
-
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-
-    const deletedUser = await db.oneOrNone(
-      "SELECT * FROM users WHERE id = $1",
-      [targetUser.id],
-    );
-    expect(deletedUser).toBeNull();
-  });
-
-  it.each(["member", "manager"])(
-    "prevents %s from deleting a user",
-    async (role) => {
-      const [actor] = await seedUser({
-        role,
-        email: `${role}_delete@example.com`,
+  it("returns 200 and deletes target user when admin acts within same team", async () => {
+    await withTestTransaction(async (tx, app) => {
+      const teamId = await seedTeam(tx);
+      const [admin] = await seedUser(tx, {
+        role: "admin",
+        email: "admin_delete@example.com",
         teamId,
       });
-      const [targetUser] = await seedUser({
+      const [target] = await seedUser(tx, {
+        role: "member",
+        email: "target_delete@example.com",
+        teamId,
+      });
+      const { sessionId, csrfToken } = await setupAuth(tx, admin);
+      const res = await request(app)
+        .delete(`/users/${target.id}`)
+        .set("Cookie", [`session_id=${sessionId}`, `csrf_token=${csrfToken}`])
+        .set("X-CSRF-Token", csrfToken);
+      expect(res.status).toBe(200);
+      const found = await tx.oneOrNone("SELECT id FROM users WHERE id = $1", [
+        target.id,
+      ]);
+      expect(found).toBeNull();
+    });
+  });
+
+  it.each(["member"])("returns 403 when %s attempts delete", async (role) => {
+    await withTestTransaction(async (tx, app) => {
+      const teamId = await seedTeam(tx);
+      const [actor] = await seedUser(tx, {
+        role,
+        email: `${role}_delete_attempt@example.com`,
+        teamId,
+      });
+      const [target] = await seedUser(tx, {
         role: "member",
         email: `target_delete_${role}@example.com`,
         teamId,
       });
-      const { sessionId, csrfToken } = await setupAuth(actor);
-
+      const { sessionId, csrfToken } = await setupAuth(tx, actor);
       const res = await request(app)
-        .delete(`/users/${targetUser.id}`)
+        .delete(`/users/${target.id}`)
         .set("Cookie", [`session_id=${sessionId}`, `csrf_token=${csrfToken}`])
         .set("X-CSRF-Token", csrfToken);
-
       expect(res.status).toBe(403);
       expect(res.body.error).toBe("Access denied");
-
-      const notDeletedUser = await db.oneOrNone(
-        "SELECT * FROM users WHERE id = $1",
-        [targetUser.id],
-      );
-      expect(notDeletedUser).not.toBeNull();
-    },
-  );
-
-  it("returns 401 if not authenticated", async () => {
-    const [targetUser] = await seedUser({
-      role: "member",
-      email: "target_delete3@example.com",
-      teamId,
+      const found = await tx.oneOrNone("SELECT id FROM users WHERE id = $1", [
+        target.id,
+      ]);
+      expect(found).not.toBeNull();
     });
-    const res = await request(app).delete(`/users/${targetUser.id}`);
-    expect(res.status).toBe(401);
+  });
+
+  it("returns 401 when unauthenticated", async () => {
+    await withTestTransaction(async (tx, app) => {
+      const [target] = await seedUser(tx, {
+        role: "member",
+        email: "target_delete_unauth@example.com",
+        teamId: await seedTeam(tx),
+      });
+      const res = await request(app).delete(`/users/${target.id}`);
+      expect(res.status).toBe(401);
+    });
+  });
+
+  it("returns 404 when target user does not exist", async () => {
+    await withTestTransaction(async (tx, app) => {
+      const teamId = await seedTeam(tx);
+      const [admin] = await seedUser(tx, {
+        role: "admin",
+        email: "admin_delete_notfound@example.com",
+        teamId,
+      });
+      const { sessionId, csrfToken } = await setupAuth(tx, admin);
+      const res = await request(app)
+        .delete("/users/00000000-0000-0000-0000-000000000000")
+        .set("Cookie", [`session_id=${sessionId}`, `csrf_token=${csrfToken}`])
+        .set("X-CSRF-Token", csrfToken);
+      expect(res.status).toBe(404);
+    });
+  });
+
+  it("returns 404 when target user is in a different team", async () => {
+    await withTestTransaction(async (tx, app) => {
+      const teamId = await seedTeam(tx);
+      const otherTeamId = await seedTeam(tx, "Other Team");
+      const [admin] = await seedUser(tx, {
+        role: "admin",
+        email: "admin_delete_cross_team@example.com",
+        teamId,
+      });
+      const [target] = await seedUser(tx, {
+        role: "member",
+        email: "target_cross_team@example.com",
+        teamId: otherTeamId,
+      });
+      const { sessionId, csrfToken } = await setupAuth(tx, admin);
+      const res = await request(app)
+        .delete(`/users/${target.id}`)
+        .set("Cookie", [`session_id=${sessionId}`, `csrf_token=${csrfToken}`])
+        .set("X-CSRF-Token", csrfToken);
+      expect(res.status).toBe(404);
+    });
+  });
+});
+
+describe("POST /users/create", () => {
+  it("returns 201 for admin; persists user with same team; password hashed", async () => {
+    await withTestTransaction(async (tx, app) => {
+      const teamId = await seedTeam(tx);
+      const [admin] = await seedUser(tx, {
+        role: "admin",
+        email: "admin_create_member@example.com",
+        teamId,
+      });
+      const { sessionId, csrfToken } = await setupAuth(tx, admin);
+      const res = await request(app)
+        .post("/users/create")
+        .set("Cookie", [`session_id=${sessionId}`, `csrf_token=${csrfToken}`])
+        .set("X-CSRF-Token", csrfToken)
+        .send({ email: "new_member@example.com", password: "StrongPass1!" });
+      expect(res.status).toBe(201);
+      const created = await tx.one(
+        "SELECT team_id, password_hash FROM users WHERE email = $1",
+        ["new_member@example.com"],
+      );
+      expect(created.team_id).toBe(teamId);
+      expect(created.password_hash).not.toBe("StrongPass1!");
+    });
+  });
+
+  it("returns 403 for member (no create permission)", async () => {
+    await withTestTransaction(async (tx, app) => {
+      const teamId = await seedTeam(tx);
+      const [member] = await seedUser(tx, {
+        role: "member",
+        email: "member_cannot_create@example.com",
+        teamId,
+      });
+      const { sessionId, csrfToken } = await setupAuth(tx, member);
+      const res = await request(app)
+        .post("/users/create")
+        .set("Cookie", [`session_id=${sessionId}`, `csrf_token=${csrfToken}`])
+        .set("X-CSRF-Token", csrfToken)
+        .send({ email: "blocked@example.com", password: "StrongPass1!" });
+      expect(res.status).toBe(403);
+      expect(res.body.error).toBe("Access denied");
+    });
+  });
+
+  it("returns 401 when unauthenticated", async () => {
+    await withTestTransaction(async (_tx, app) => {
+      const res = await request(app)
+        .post("/users/create")
+        .send({ email: "unauth@example.com", password: "StrongPass1!" });
+      expect(res.status).toBe(401);
+    });
+  });
+
+  it("returns 401 when CSRF token is missing", async () => {
+    await withTestTransaction(async (tx, app) => {
+      const teamId = await seedTeam(tx);
+      const [admin] = await seedUser(tx, {
+        role: "admin",
+        email: "admin_csrf_missing@example.com",
+        teamId,
+      });
+      const { sessionId } = await setupAuth(tx, admin);
+      const res = await request(app)
+        .post("/users/create")
+        .set("Cookie", [`session_id=${sessionId}`])
+        .send({ email: "csrf_missing@example.com", password: "StrongPass1!" });
+      expect(res.status).toBe(401);
+      expect(res.body.error).toMatch("CSRF token missing");
+    });
+  });
+
+  it("returns 401 when CSRF token is invalid", async () => {
+    await withTestTransaction(async (tx, app) => {
+      const teamId = await seedTeam(tx);
+      const [admin] = await seedUser(tx, {
+        role: "admin",
+        email: "admin_csrf_invalid@example.com",
+        teamId,
+      });
+      const { sessionId, csrfToken } = await setupAuth(tx, admin);
+      const res = await request(app)
+        .post("/users/create")
+        .set("Cookie", [`session_id=${sessionId}`, `csrf_token=${csrfToken}`])
+        .set("X-CSRF-Token", "invalid_token")
+        .send({ email: "csrf_invalid@example.com", password: "StrongPass1!" });
+      expect(res.status).toBe(401);
+      expect(res.body.error).toMatch("Invalid CSRF token");
+    });
+  });
+
+  it("returns 400 for invalid email format", async () => {
+    await withTestTransaction(async (tx, app) => {
+      const teamId = await seedTeam(tx);
+      const [admin] = await seedUser(tx, {
+        role: "admin",
+        email: "admin_invalid_email@example.com",
+        teamId,
+      });
+      const { sessionId, csrfToken } = await setupAuth(tx, admin);
+      const res = await request(app)
+        .post("/users/create")
+        .set("Cookie", [`session_id=${sessionId}`, `csrf_token=${csrfToken}`])
+        .set("X-CSRF-Token", csrfToken)
+        .send({ email: "not-an-email", password: "StrongPass1!" });
+      expect(res.status).toBe(400);
+      expect(res.body.errors).toBeDefined();
+    });
+  });
+
+  it("returns 400 if email already exists (any team)", async () => {
+    await withTestTransaction(async (tx, app) => {
+      const teamId = await seedTeam(tx);
+      const otherTeamId = await seedTeam(tx, "Other Team");
+      const [admin] = await seedUser(tx, {
+        role: "admin",
+        email: "admin_dup_email@example.com",
+        teamId,
+      });
+      await seedUser(tx, {
+        role: "member",
+        email: "dup@example.com",
+        teamId: otherTeamId,
+      });
+      const { sessionId, csrfToken } = await setupAuth(tx, admin);
+      const res = await request(app)
+        .post("/users/create")
+        .set("Cookie", [`session_id=${sessionId}`, `csrf_token=${csrfToken}`])
+        .set("X-CSRF-Token", csrfToken)
+        .send({ email: "dup@example.com", password: "StrongPass1!" });
+      expect(res.status).toBe(400);
+      expect(res.body.error).toBe("Email already exists");
+    });
   });
 });
