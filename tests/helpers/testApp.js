@@ -3,6 +3,7 @@ import cookieParser from "cookie-parser";
 import authRoutes from "../../routes/auth.js";
 import userRoutes from "../../routes/users.js";
 import documentRoutes from "../../routes/documents.js";
+import teamsRoutes from "../../routes/teams.js";
 
 function createTestApp(tx) {
   const app = express();
@@ -21,6 +22,7 @@ function createTestApp(tx) {
   app.use("/auth", authRoutes);
   app.use("/users", userRoutes);
   app.use("/documents", documentRoutes);
+  app.use("/teams", teamsRoutes);
 
   return app;
 }
