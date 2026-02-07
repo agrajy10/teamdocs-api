@@ -1,9 +1,10 @@
 export async function getAllUsers(req, res) {
-  const teamId = req.teamId;
+  const teamId = req.query.team_id;
+  const userId = req.userId;
   const users = await req.db.query(
     `SELECT u.id, u.email, u.is_active, u.created_at, u.updated_at, r.name AS role FROM users u 
-      LEFT JOIN roles r ON u.role_id = r.id WHERE u.team_id = $1`,
-    [teamId],
+      LEFT JOIN roles r ON u.role_id = r.id WHERE u.team_id = $1 AND u.id <> $2`,
+    [teamId, userId],
   );
   res.status(200).json({ users });
 }
