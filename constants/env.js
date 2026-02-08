@@ -12,6 +12,7 @@ const env = {
   DB_NAME: process.env.DB_NAME,
   DB_USERNAME: process.env.DB_USERNAME,
   DB_PASSWORD: process.env.DB_PASSWORD,
+  SEED_PASSWORD: process.env.SEED_PASSWORD,
   ENV: process.env.NODE_ENV,
 };
 

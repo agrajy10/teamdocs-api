@@ -4,7 +4,8 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "migrate": "node-pg-migrate", 
+    "migrate": "node-pg-migrate",
+    "seed": "node scripts/seed.js",
     "start": "node --watch ./app.js",
     "test": "cross-env NODE_ENV=TEST node --experimental-vm-modules node_modules/jest/bin/jest.js"
   },
@@ -24,6 +25,7 @@
     "sanitize-html": "^2.17.0"
   },
   "devDependencies": {
+    "@faker-js/faker": "^9.9.0",
     "cross-env": "^10.1.0",
     "jest": "^30.2.0",
     "node-pg-migrate": "^8.0.4",
