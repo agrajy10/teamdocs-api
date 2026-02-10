@@ -28,6 +28,11 @@ jobs:
       DATABASE_URL: postgres://postgres:postgres@localhost:5432/app
       NODE_ENV: test
       SESSION_SECRET: testsecret
+      DB_NAME: app
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      DB_HOST: localhost
+      DB_PORT: 5432
 
     steps:
       - name: Checkout repository
