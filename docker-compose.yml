@@ -1,6 +1,9 @@
+version: "3.9"
+
 services:
   db:
     image: postgres:17
+    container_name: app_db
     environment:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USERNAME}
@@ -17,6 +20,7 @@ services:
 
   dbgate:
     image: dbgate/dbgate:latest
+    container_name: dbgate
     ports:
       - "3001:3000"
     environment:
@@ -26,36 +30,35 @@ services:
       PASSWORD_con1: ${DB_PASSWORD}
       DATABASE_con1: ${DB_NAME}
       ENGINE_con1: postgres@dbgate-plugin-postgres
-    volumes:
-      - db_data:/root/.dbgate
     depends_on:
       - db
 
   migrate:
-    build: .
+    build:
+      context: .
+      target: prod
     command: npm run migrate up
+    environment:
+      DATABASE_URL: postgres://${DB_USERNAME}:${DB_PASSWORD}@db:5432/${DB_NAME}
     depends_on:
       db:
         condition: service_healthy
-    environment:
-      DATABASE_URL: ${DATABASE_URL}
     restart: "no"
 
   api:
-    build: .
+    build:
+      context: .
+      target: dev # 👈 dev image for hot reload
+    container_name: app_api
     volumes:
       - .:/app
       - /app/node_modules
     ports:
       - "3000:3000"
     environment:
-      NODE_ENV: ${NODE_ENV}
-      DB_HOST: ${DB_HOST}
-      DB_PORT: ${DB_PORT}
-      DB_NAME: ${DB_NAME}
-      DB_USERNAME: ${DB_USERNAME}
-      DB_PASSWORD: ${DB_PASSWORD}
-      SEED_PASSWORD: ${SEED_PASSWORD}
+      NODE_ENV: development
+      DATABASE_URL: postgres://${DB_USERNAME}:${DB_PASSWORD}@db:5432/${DB_NAME}
+      SESSION_SECRET: ${SESSION_SECRET}
     depends_on:
       migrate:
         condition: service_completed_successfully
