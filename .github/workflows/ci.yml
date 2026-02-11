@@ -51,7 +51,7 @@ jobs:
         run: npm run migrate up
 
       - name: Seed database
-        run: npm seed
+        run: npm run seed
 
       - name: Run tests
         run: npm test
