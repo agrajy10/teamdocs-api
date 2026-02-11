@@ -33,6 +33,7 @@ jobs:
       DB_PASSWORD: postgres
       DB_HOST: localhost
       DB_PORT: 5432
+      SEED_PASSWORD: password123
 
     steps:
       - name: Checkout repository
