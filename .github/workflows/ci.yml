@@ -65,5 +65,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Build production Docker image
-        run: docker build --target prod -t teamdocs-api:${{ github.sha }} .
+      - name: Login, Build and Push production Docker image
+        run: |
+          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+          docker build --target prod -t ${{ secrets.DOCKERHUB_USERNAME }}/teamdocs-api:latest -t ${{ secrets.DOCKERHUB_USERNAME }}/teamdocs-api:${{ github.sha }} .
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/teamdocs-api:latest
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/teamdocs-api:${{ github.sha }}
