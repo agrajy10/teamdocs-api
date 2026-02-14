@@ -60,14 +60,30 @@ jobs:
   build-image:
     runs-on: ubuntu-latest
     needs: test   # 👈 runs only if tests pass
+    permissions:
+      contents: read
+      id-token: write
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Login, Build and Push production Docker image
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag and push image to Amazon ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+          IMAGE_TAG: ${{ github.sha }}
         run: |
-          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
-          docker build --target prod -t ${{ secrets.DOCKERHUB_USERNAME }}/teamdocs-api:latest -t ${{ secrets.DOCKERHUB_USERNAME }}/teamdocs-api:${{ github.sha }} .
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/teamdocs-api:latest
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/teamdocs-api:${{ github.sha }}
+          docker build --target prod -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
