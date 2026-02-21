@@ -24,7 +24,7 @@ app.use("/teams", teamsRoutes);
 if (process.env.NODE_ENV !== "TEST") {
   app.listen(port, () => {
     console.log(`App is running on port : ${port}`);
-  });
+  }, '0.0.0.0');
 }
 
 export default app;
