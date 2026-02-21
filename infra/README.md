@@ -46,7 +46,7 @@ The stack (`TeamdocsInfraStack`) creates:
 - Name: `teamdocs-api`
 - Purpose: Stores the Docker image for the `teamdocs-api` service.
 - Output:
-  - `EcrRepositoryUri` – Full ECR URI used for tagging and pushing the image.
+  - `EcrRepositoryUri` – Full ECR URI used for tagging and pushing the image..
 
 ### EC2 Instance
 
