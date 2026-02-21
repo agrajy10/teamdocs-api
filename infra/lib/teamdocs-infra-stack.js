@@ -105,7 +105,7 @@ export class TeamdocsInfraStack extends cdk.Stack {
     );
 
     const dbEngine = rds.DatabaseInstanceEngine.postgres({
-      version: rds.PostgresEngineVersion.V16,
+      version: rds.PostgresEngineVersion.of("18", "18"),
     });
 
     const parameterGroup = new rds.ParameterGroup(this, "PostgresParams", {

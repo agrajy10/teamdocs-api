@@ -81,7 +81,7 @@ It deliberately does **not** run `docker run` so that you can control container 
 ### RDS PostgreSQL
 
 - Construct: `AppDatabase`
-- Engine: PostgreSQL 16
+- Engine: PostgreSQL 18
 - Instance type: `t3.micro` (free tier–eligible)
 - Storage: 20 GB
 - AZs: Single AZ (no Multi-AZ)
@@ -94,7 +94,7 @@ It deliberately does **not** run `docker run` so that you can control container 
 #### DB Parameter Group
 
 - Construct: `PostgresParams`
-- Engine: PostgreSQL 16
+- Engine: PostgreSQL 18
 - Parameters:
   - `rds.force_ssl = 0` – Disables enforced SSL connections (as requested)
 
