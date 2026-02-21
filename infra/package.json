@@ -1,0 +1,22 @@
+{
+  "name": "teamdocs-infra",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "bin": {
+    "teamdocs-infra": "bin/teamdocs-infra.js"
+  },
+  "scripts": {
+    "cdk:synth": "cdk synth",
+    "cdk:deploy": "cdk deploy",
+    "cdk:destroy": "cdk destroy"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "^2.153.0",
+    "constructs": "^10.3.0",
+    "source-map-support": "^0.5.21"
+  },
+  "devDependencies": {
+    "aws-cdk": "^2.153.0"
+  }
+}
