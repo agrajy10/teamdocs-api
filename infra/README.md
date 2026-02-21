@@ -4,6 +4,8 @@ This folder contains an AWS CDK (v2) app that provisions the infrastructure requ
 
 The CDK app is implemented using **ES modules** and lives entirely in this `infra` subproject so that infra concerns stay separate from application code.
 
+This file is also used as a convenient place to trigger infra-only deployments via the `Deploy Infra` GitHub Actions workflow whenever it changes.
+
 ## High-Level Architecture
 
 The stack (`TeamdocsInfraStack`) creates:
@@ -182,4 +184,3 @@ npx cdk destroy
 ```
 
 This will delete the EC2 instance, RDS instance, VPC, security groups, and related resources. Be sure to back up any data you want to keep before destroying the stack.
-
