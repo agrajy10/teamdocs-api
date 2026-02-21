@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - master
+    paths-ignore:
+      - "infra/**"
 
 jobs:
   test:
@@ -59,7 +61,7 @@ jobs:
 
   build-image:
     runs-on: ubuntu-latest
-    needs: test   # 👈 runs only if tests pass
+    needs: test # 👈 runs only if tests pass
     permissions:
       contents: read
       id-token: write
