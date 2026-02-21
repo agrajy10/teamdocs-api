@@ -13,6 +13,9 @@ app.use(e.json());
 app.use(cookieParser());
 app.use(injectDb);
 app.set("trust proxy", true);
+app.get("/health", (req, res) => {
+  res.json({ status: "ok" });
+});
 app.use("/auth", authRoutes);
 app.use("/users", userRoutes);
 app.use("/documents", documentRoutes);
