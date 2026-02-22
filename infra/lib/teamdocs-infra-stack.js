@@ -62,59 +62,6 @@ export class TeamdocsInfraStack extends cdk.Stack {
       ),
     );
 
-    const stack = cdk.Stack.of(this);
-    const ecrRegistry = `${stack.account}.dkr.ecr.${stack.region}.amazonaws.com`;
-
-    const userData = ec2.UserData.forLinux();
-
-    userData.addCommands(
-      "sudo dnf update -y",
-      "sudo dnf install -y docker awscli jq",
-      "sudo systemctl enable docker",
-      "sudo systemctl start docker",
-      `DB_SECRET_ARN=${dbInstance.secret?.secretArn}`,
-      `API_ENV_SECRET_ARN=${apiEnvSecret.secretArn}`,
-      `DB_SECRET_JSON=$(aws secretsmanager get-secret-value --region ${stack.region} --secret-id "$DB_SECRET_ARN" --query SecretString --output text)`,
-      `API_ENV_JSON=$(aws secretsmanager get-secret-value --region ${stack.region} --secret-id "$API_ENV_SECRET_ARN" --query SecretString --output text)`,
-      "DB_NAME=$(echo \"$DB_SECRET_JSON\" | jq -r '.dbname')",
-      "DB_USERNAME=$(echo \"$DB_SECRET_JSON\" | jq -r '.username')",
-      "DB_PASSWORD=$(echo \"$DB_SECRET_JSON\" | jq -r '.password')",
-      "DB_HOST=$(echo \"$DB_SECRET_JSON\" | jq -r '.host')",
-      "DB_PORT=$(echo \"$DB_SECRET_JSON\" | jq -r '.port')",
-      "NODE_ENV=$(echo \"$API_ENV_JSON\" | jq -r '.NODE_ENV')",
-      "SESSION_SECRET=$(echo \"$API_ENV_JSON\" | jq -r '.SESSION_SECRET')",
-      'DATABASE_URL="postgres://${DB_USERNAME}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}"',
-      "cat << 'EOF' | sudo tee /etc/teamdocs-api.env >/dev/null",
-      "NODE_ENV=${NODE_ENV}",
-      "SESSION_SECRET=${SESSION_SECRET}",
-      "DB_NAME=${DB_NAME}",
-      "DB_USERNAME=${DB_USERNAME}",
-      "DB_PASSWORD=${DB_PASSWORD}",
-      "DB_HOST=${DB_HOST}",
-      "DB_PORT=${DB_PORT}",
-      "DATABASE_URL=${DATABASE_URL}",
-      "EOF",
-      `aws ecr get-login-password --region ${stack.region} | docker login --username AWS --password-stdin ${ecrRegistry}`,
-      `docker pull ${repository.repositoryUri}:latest`,
-    );
-
-    const instance = new ec2.Instance(this, "AppInstance", {
-      vpc,
-      instanceType: ec2.InstanceType.of(
-        ec2.InstanceClass.T2,
-        ec2.InstanceSize.MICRO,
-      ),
-      machineImage: ec2.MachineImage.latestAmazonLinux2023({
-        cpuType: ec2.AmazonLinuxCpuType.X86_64,
-      }),
-      vpcSubnets: {
-        subnetType: ec2.SubnetType.PUBLIC,
-      },
-      securityGroup: ec2SecurityGroup,
-      role: instanceRole,
-      userData,
-    });
-
     const dbSecurityGroup = new ec2.SecurityGroup(this, "DbSecurityGroup", {
       vpc,
       allowAllOutbound: true,
@@ -173,6 +120,59 @@ export class TeamdocsInfraStack extends cdk.Stack {
     });
 
     apiEnvSecret.grantRead(instanceRole);
+
+    const stack = cdk.Stack.of(this);
+    const ecrRegistry = `${stack.account}.dkr.ecr.${stack.region}.amazonaws.com`;
+
+    const userData = ec2.UserData.forLinux();
+
+    userData.addCommands(
+      "sudo dnf update -y",
+      "sudo dnf install -y docker awscli jq",
+      "sudo systemctl enable docker",
+      "sudo systemctl start docker",
+      `DB_SECRET_ARN=${dbInstance.secret?.secretArn}`,
+      `API_ENV_SECRET_ARN=${apiEnvSecret.secretArn}`,
+      `DB_SECRET_JSON=$(aws secretsmanager get-secret-value --region ${stack.region} --secret-id "$DB_SECRET_ARN" --query SecretString --output text)`,
+      `API_ENV_JSON=$(aws secretsmanager get-secret-value --region ${stack.region} --secret-id "$API_ENV_SECRET_ARN" --query SecretString --output text)`,
+      "DB_NAME=$(echo \"$DB_SECRET_JSON\" | jq -r '.dbname')",
+      "DB_USERNAME=$(echo \"$DB_SECRET_JSON\" | jq -r '.username')",
+      "DB_PASSWORD=$(echo \"$DB_SECRET_JSON\" | jq -r '.password')",
+      "DB_HOST=$(echo \"$DB_SECRET_JSON\" | jq -r '.host')",
+      "DB_PORT=$(echo \"$DB_SECRET_JSON\" | jq -r '.port')",
+      "NODE_ENV=$(echo \"$API_ENV_JSON\" | jq -r '.NODE_ENV')",
+      "SESSION_SECRET=$(echo \"$API_ENV_JSON\" | jq -r '.SESSION_SECRET')",
+      'DATABASE_URL="postgres://${DB_USERNAME}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}"',
+      "cat << 'EOF' | sudo tee /etc/teamdocs-api.env >/dev/null",
+      "NODE_ENV=${NODE_ENV}",
+      "SESSION_SECRET=${SESSION_SECRET}",
+      "DB_NAME=${DB_NAME}",
+      "DB_USERNAME=${DB_USERNAME}",
+      "DB_PASSWORD=${DB_PASSWORD}",
+      "DB_HOST=${DB_HOST}",
+      "DB_PORT=${DB_PORT}",
+      "DATABASE_URL=${DATABASE_URL}",
+      "EOF",
+      `aws ecr get-login-password --region ${stack.region} | docker login --username AWS --password-stdin ${ecrRegistry}`,
+      `docker pull ${repository.repositoryUri}:latest`,
+    );
+
+    const instance = new ec2.Instance(this, "AppInstance", {
+      vpc,
+      instanceType: ec2.InstanceType.of(
+        ec2.InstanceClass.T2,
+        ec2.InstanceSize.MICRO,
+      ),
+      machineImage: ec2.MachineImage.latestAmazonLinux2023({
+        cpuType: ec2.AmazonLinuxCpuType.X86_64,
+      }),
+      vpcSubnets: {
+        subnetType: ec2.SubnetType.PUBLIC,
+      },
+      securityGroup: ec2SecurityGroup,
+      role: instanceRole,
+      userData,
+    });
 
     new cdk.CfnOutput(this, "ApiEnvSecretArn", {
       value: apiEnvSecret.secretArn,
