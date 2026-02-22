@@ -131,28 +131,42 @@ export class TeamdocsInfraStack extends cdk.Stack {
       "sudo dnf install -y docker awscli jq",
       "sudo systemctl enable docker",
       "sudo systemctl start docker",
-      `DB_SECRET_ARN=${dbInstance.secret?.secretArn}`,
-      `API_ENV_SECRET_ARN=${apiEnvSecret.secretArn}`,
-      `DB_SECRET_JSON=$(aws secretsmanager get-secret-value --region ${stack.region} --secret-id "$DB_SECRET_ARN" --query SecretString --output text)`,
-      `API_ENV_JSON=$(aws secretsmanager get-secret-value --region ${stack.region} --secret-id "$API_ENV_SECRET_ARN" --query SecretString --output text)`,
-      "DB_NAME=$(echo \"$DB_SECRET_JSON\" | jq -r '.dbname')",
-      "DB_USERNAME=$(echo \"$DB_SECRET_JSON\" | jq -r '.username')",
-      "DB_PASSWORD=$(echo \"$DB_SECRET_JSON\" | jq -r '.password')",
-      "DB_HOST=$(echo \"$DB_SECRET_JSON\" | jq -r '.host')",
-      "DB_PORT=$(echo \"$DB_SECRET_JSON\" | jq -r '.port')",
-      "NODE_ENV=$(echo \"$API_ENV_JSON\" | jq -r '.NODE_ENV')",
-      "SESSION_SECRET=$(echo \"$API_ENV_JSON\" | jq -r '.SESSION_SECRET')",
-      'DATABASE_URL="postgres://${DB_USERNAME}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}"',
-      "cat << EOF | sudo tee /etc/teamdocs-api.env >/dev/null",
-      "NODE_ENV=${NODE_ENV}",
-      "SESSION_SECRET=${SESSION_SECRET}",
-      "DB_NAME=${DB_NAME}",
-      "DB_USERNAME=${DB_USERNAME}",
-      "DB_PASSWORD=${DB_PASSWORD}",
-      "DB_HOST=${DB_HOST}",
-      "DB_PORT=${DB_PORT}",
-      "DATABASE_URL=${DATABASE_URL}",
+
+      // Set ARNs
+      `export DB_SECRET_ARN=${dbInstance.secret.secretArn}`,
+      `export API_ENV_SECRET_ARN=${apiEnvSecret.secretArn}`,
+
+      // Fetch secrets
+      `export DB_SECRET_JSON=$(aws secretsmanager get-secret-value --region ${stack.region} --secret-id "$DB_SECRET_ARN" --query SecretString --output text)`,
+      `export API_ENV_JSON=$(aws secretsmanager get-secret-value --region ${stack.region} --secret-id "$API_ENV_SECRET_ARN" --query SecretString --output text)`,
+
+      // Parse DB secret
+      'export DB_NAME=$(echo "$DB_SECRET_JSON" | jq -r ".dbname")',
+      'export DB_USERNAME=$(echo "$DB_SECRET_JSON" | jq -r ".username")',
+      'export DB_PASSWORD=$(echo "$DB_SECRET_JSON" | jq -r ".password")',
+      'export DB_HOST=$(echo "$DB_SECRET_JSON" | jq -r ".host")',
+      'export DB_PORT=$(echo "$DB_SECRET_JSON" | jq -r ".port")',
+
+      // Parse API secret
+      'export NODE_ENV=$(echo "$API_ENV_JSON" | jq -r ".NODE_ENV")',
+      'export SESSION_SECRET=$(echo "$API_ENV_JSON" | jq -r ".SESSION_SECRET")',
+
+      // Construct DATABASE_URL
+      'export DATABASE_URL="postgres://${DB_USERNAME}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}"',
+
+      // Write env file (IMPORTANT: no quotes after EOF so variables expand)
+      "cat <<EOF | sudo tee /etc/teamdocs-api.env >/dev/null",
+      "NODE_ENV=$NODE_ENV",
+      "SESSION_SECRET=$SESSION_SECRET",
+      "DB_NAME=$DB_NAME",
+      "DB_USERNAME=$DB_USERNAME",
+      "DB_PASSWORD=$DB_PASSWORD",
+      "DB_HOST=$DB_HOST",
+      "DB_PORT=$DB_PORT",
+      "DATABASE_URL=$DATABASE_URL",
       "EOF",
+
+      // Docker login + pull
       `aws ecr get-login-password --region ${stack.region} | docker login --username AWS --password-stdin ${ecrRegistry}`,
       `docker pull ${repository.repositoryUri}:latest`,
     );
