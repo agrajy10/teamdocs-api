@@ -140,8 +140,8 @@ export class TeamdocsInfraStack extends cdk.Stack {
       `export DB_SECRET_JSON=$(aws secretsmanager get-secret-value --region ${stack.region} --secret-id "$DB_SECRET_ARN" --query SecretString --output text)`,
       `export API_ENV_JSON=$(aws secretsmanager get-secret-value --region ${stack.region} --secret-id "$API_ENV_SECRET_ARN" --query SecretString --output text)`,
 
-      // Parse DB secret
-      'export DB_NAME=$(echo "$DB_SECRET_JSON" | jq -r ".dbname")',
+      // Parse DB secret (no dbname in secret, use actual default DB name)
+      "export DB_NAME=postgres",
       'export DB_USERNAME=$(echo "$DB_SECRET_JSON" | jq -r ".username")',
       'export DB_PASSWORD=$(echo "$DB_SECRET_JSON" | jq -r ".password")',
       'export DB_HOST=$(echo "$DB_SECRET_JSON" | jq -r ".host")',
