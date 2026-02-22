@@ -143,7 +143,7 @@ export class TeamdocsInfraStack extends cdk.Stack {
       "NODE_ENV=$(echo \"$API_ENV_JSON\" | jq -r '.NODE_ENV')",
       "SESSION_SECRET=$(echo \"$API_ENV_JSON\" | jq -r '.SESSION_SECRET')",
       'DATABASE_URL="postgres://${DB_USERNAME}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}"',
-      "cat << 'EOF' | sudo tee /etc/teamdocs-api.env >/dev/null",
+      "cat << EOF | sudo tee /etc/teamdocs-api.env >/dev/null",
       "NODE_ENV=${NODE_ENV}",
       "SESSION_SECRET=${SESSION_SECRET}",
       "DB_NAME=${DB_NAME}",
