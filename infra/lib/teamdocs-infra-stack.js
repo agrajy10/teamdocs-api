@@ -3,6 +3,7 @@ import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as rds from "aws-cdk-lib/aws-rds";
 import * as ecr from "aws-cdk-lib/aws-ecr";
 import * as iam from "aws-cdk-lib/aws-iam";
+import * as secretsmanager from "aws-cdk-lib/aws-secretsmanager";
 
 export class TeamdocsInfraStack extends cdk.Stack {
   constructor(scope, id, props) {
@@ -138,6 +139,23 @@ export class TeamdocsInfraStack extends cdk.Stack {
     if (dbInstance.secret) {
       dbInstance.secret.grantRead(instanceRole);
     }
+
+    const apiEnvSecret = new secretsmanager.Secret(this, "ApiEnvSecret", {
+      secretName: "teamdocs-api-env",
+      generateSecretString: {
+        secretStringTemplate: JSON.stringify({
+          NODE_ENV: "production",
+        }),
+        generateStringKey: "SESSION_SECRET",
+      },
+    });
+
+    apiEnvSecret.grantRead(instanceRole);
+
+    new cdk.CfnOutput(this, "ApiEnvSecretArn", {
+      value: apiEnvSecret.secretArn,
+      exportName: "ApiEnvSecretArn",
+    });
 
     new cdk.CfnOutput(this, "Ec2PublicIp", {
       value: instance.instancePublicIp,
