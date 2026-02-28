@@ -169,6 +169,18 @@ export class TeamdocsInfraStack extends cdk.Stack {
       // Docker login + pull
       `aws ecr get-login-password --region ${stack.region} | docker login --username AWS --password-stdin ${ecrRegistry}`,
       `docker pull ${repository.repositoryUri}:latest`,
+
+      // Stop and remove existing container if any
+      "docker stop teamdocs-api || true",
+      "docker rm teamdocs-api || true",
+
+      // Run the container with env file
+      `docker run -d \\`,
+      "  --name teamdocs-api \\",
+      "  --env-file /etc/teamdocs-api.env \\",
+      "  -p 3000:3000 \\",
+      "  --restart unless-stopped \\",
+      `  ${repository.repositoryUri}:latest`,
     );
 
     const instance = new ec2.Instance(this, "AppInstance", {
