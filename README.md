@@ -333,11 +333,3 @@ teamdocs-api/
 ├── ERD.md                # Database schema diagram
 └── package.json          # Dependencies and scripts
 ```
-
-## License
-
-ISC
-
-## Author
-
-Built with ❤️ for collaborative document management
